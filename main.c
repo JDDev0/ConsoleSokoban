@@ -43,7 +43,7 @@ static int continueLevelAddFlag;
 
 //Draw player background
 static int isPlayerBackground = 0;
-static const int playerBackgroundDelay = 5;
+static const int playerBackgroundDelay = 12;
 static int playerBackgroundTmp = 0;
 
 //Level
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
 
     while(1) {
         update();
-        sleepMS(100);
+        sleepMS(40);
     }
 
     return EXIT_SUCCESS;
@@ -143,7 +143,9 @@ void update(void) {
     //Graphics
     clrscr();
     //Player background
-    if(++playerBackgroundTmp > playerBackgroundDelay) {
+    if(++playerBackgroundTmp >= playerBackgroundDelay + isPlayerBackground) {
+    	//If isPlayerBackground: wait an additional update (25 updates per second, every half
+    	//second: switch background/foreground colors [12 updates, 13 updates])
         playerBackgroundTmp = 0;
         isPlayerBackground = !isPlayerBackground;
     }
