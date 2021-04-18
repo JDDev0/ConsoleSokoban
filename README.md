@@ -1,2 +1,3 @@
-# Game_ConsoleSokoban
+**ConsoleSokoban**
+
 A sokoban game for Console (Linux, Windows)
