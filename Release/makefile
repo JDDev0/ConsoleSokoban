@@ -25,7 +25,7 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := Lagerhausverwalter
+BUILD_ARTIFACT_NAME := Sokoban
 BUILD_ARTIFACT_EXTENSION :=
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
@@ -33,19 +33,19 @@ BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ART
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: Lagerhausverwalter
+all: Sokoban
 
 # Tool invocations
-Lagerhausverwalter: $(OBJS) $(USER_OBJS) makefile objects.mk $(OPTIONAL_TOOL_DEPS)
+Sokoban: $(OBJS) $(USER_OBJS) makefile objects.mk $(OPTIONAL_TOOL_DEPS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc  -o "Lagerhausverwalter" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc  -o "Sokoban" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) Lagerhausverwalter
+	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) Sokoban
 	-@echo ' '
 
 .PHONY: all clean dependents
