@@ -546,7 +546,7 @@ void updateMouse(void) {
                     break;
 
                 int mapIndex = column/3 + (row - 1)/2*24;
-                if(mapIndex <= mapCount) {
+                if(mapIndex < mapCount) {
                 	currentMapIndex = mapIndex;
                     updateKey(CL_KEY_ENTER);
                 }
