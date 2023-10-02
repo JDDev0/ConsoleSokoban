@@ -919,6 +919,7 @@ void setLevel(int lvl) {
 
 void readLevelData(void) {
 	if(levels != NULL) {
+		selectedLevel = 0;
 		levelCount = 0;
 		free(levels);
 	}
