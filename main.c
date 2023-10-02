@@ -32,7 +32,7 @@ static void (*draw)(void);
 static void (*drawOld)(void);
 
 //Maps
-#define MAX_LEVEL_PACK_COUNT 16
+#define MAX_LEVEL_PACK_COUNT 64
 
 #define BASIC_MAP "basic.lvl"
 
