@@ -34,7 +34,7 @@ static void (*drawOld)(void);
 //Maps
 #define MAX_LEVEL_PACK_COUNT 64
 
-#define BASIC_MAP "basic.lvl"
+#define MAIN_MAP "main.lvl"
 #define DAEMON_MAP "daemon.lvl"
 
 static int mapCount;
@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
 	//Default level packs
 	int i = 0;
 
-    memcpy(pathMapData[i++], BASIC_MAP, min((int)strlen(BASIC_MAP) + 1, 512));
+    memcpy(pathMapData[i++], MAIN_MAP, min((int)strlen(MAIN_MAP) + 1, 512));
     memcpy(pathMapData[i++], DAEMON_MAP, min((int)strlen(DAEMON_MAP) + 1, 512));
 
     for(int j = 1;j < argc && i < MAX_LEVEL_PACK_COUNT;j++) //Additional level packs
