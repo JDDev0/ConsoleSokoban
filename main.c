@@ -10,8 +10,6 @@
 
 #define VERSION "v1.0.1"
 
-#define DATA_PATH "map.data"
-
 void resetGame(void);
 void init(void);
 void update(void);
@@ -19,20 +17,29 @@ void updateKey(int);
 void updateMouse(void);
 int moveBox(int posX, int posY, int moveX, int moveY);
 void drawField(void);
-void drawSelecetLevel(void);
+void drawSelectLevelPack(void);
+void drawSelectLevel(void);
 void drawStartMenu(void);
 void initVars(void);
 void setLevel(int lvl);
 void readLevelData(void);
 void saveLevelData(void);
 
+int min(int, int);
+
 //Set funcPtr to drawField after START_MENU
 static void (*draw)(void);
 static void (*drawOld)(void);
 
-//Map.data
+//Maps
+#define MAX_LEVEL_PACK_COUNT 16
+
+#define BASIC_MAP "basic.lvl"
+
+static int mapCount;
+static int currentMapIndex = 0;
 static FILE *map;
-static char pathMapData[512];
+static char pathMapData[MAX_LEVEL_PACK_COUNT][512];
 
 //Help
 static int isHelp;
@@ -61,14 +68,14 @@ static int selectedLevel;
 static struct field levelNow;
 static struct field levelNowLastStep;
 static struct field levelNowTmpStep;
-static int levelCount;
+static int levelCount = 0;
 static struct field *levels;
 
 static const int gameMinWidth = 74;
 static const int gameMinHeight = 23;
 
 static enum {
-    START_MENU, SELECT_LEVEL, IN_GAME, GAME_OVER
+    START_MENU, SELECT_LEVEL_PACK, SELECT_LEVEL, IN_GAME, GAME_OVER
 }screen;
 
 void resetGame(void) {
@@ -87,10 +94,16 @@ void resetGame(void) {
 }
 
 int main(int argc, char *argv[]) {
-    if(argc > 1)
-        memcpy(pathMapData, argv[1], strlen(argv[1]) + 1);
-    else
-        memcpy(pathMapData, DATA_PATH, strlen(DATA_PATH) + 1);
+	//Default level packs
+	int i = 0;
+
+    memcpy(pathMapData[i++], BASIC_MAP, min((int)strlen(BASIC_MAP) + 1, 512));
+
+    for(int j = 1;j < argc && i < MAX_LEVEL_PACK_COUNT;j++) //Additional level packs
+        memcpy(pathMapData[i++], argv[j], min((int)strlen(argv[j]) + 1, 512));
+
+    mapCount = i;
+
     init();
 
     while(1) {
@@ -114,8 +127,6 @@ void init(void) {
 
         exit(EXIT_FAILURE);
     }
-
-    readLevelData();
 
     //Add reset after console size check
     atexit(resetGame);
@@ -213,10 +224,50 @@ void updateKey(int key) {
                     else
                         selectedLevel = minLevelNotCompleted;
 
-                    screen = SELECT_LEVEL;
+                    screen = SELECT_LEVEL_PACK;
 
                     //Set new draw function
-                    draw = drawSelecetLevel;
+                    draw = drawSelectLevelPack;
+                }
+
+                break;
+            case SELECT_LEVEL_PACK:
+                switch(key) {
+                    case CL_KEY_LEFT:
+                        if(currentMapIndex == 0)
+                            break;
+
+                        currentMapIndex--;
+
+                        break;
+                    case CL_KEY_UP:
+                    	currentMapIndex -= 24;
+                        if(currentMapIndex < 0)
+                        	currentMapIndex += 24;
+
+                        break;
+                    case CL_KEY_RIGHT:
+                        if(currentMapIndex == mapCount-1)
+                            break;
+
+                        currentMapIndex++;
+
+                        break;
+                    case CL_KEY_DOWN:
+                    	currentMapIndex += 24;
+                        if(currentMapIndex >= mapCount)
+                        	currentMapIndex -= 24;
+
+                        break;
+                }
+
+                if(key == CL_KEY_ENTER) {
+                    screen = SELECT_LEVEL;
+
+                    readLevelData();
+
+                    //Set new draw function
+                    draw = drawSelectLevel;
                 }
 
                 break;
@@ -431,11 +482,16 @@ void updateKey(int key) {
 
         //Exit game
         if(key == CL_KEY_ESC) {
-            if(screen == SELECT_LEVEL) {
-                screen = START_MENU;
+        	if(screen == SELECT_LEVEL_PACK) {
+				screen = START_MENU;
+
+				//Set new draw function
+				draw = drawStartMenu;
+			}else if(screen == SELECT_LEVEL) {
+                screen = SELECT_LEVEL_PACK;
 
                 //Set new draw function
-                draw = drawStartMenu;
+                draw = drawSelectLevelPack;
             }else {
                 escCheck = 1;
             }
@@ -483,6 +539,17 @@ void updateMouse(void) {
                     updateKey(CL_KEY_ENTER);
                 if(row == 21 && column > 64 && column < 73)
                     updateKey(CL_KEY_F1);
+
+                break;
+            case SELECT_LEVEL_PACK:
+                if(row == 0)
+                    break;
+
+                int mapIndex = column/3 + (row - 1)/2*24;
+                if(mapIndex <= mapCount) {
+                	currentMapIndex = mapIndex;
+                    updateKey(CL_KEY_ENTER);
+                }
 
                 break;
             case SELECT_LEVEL:
@@ -605,10 +672,67 @@ void drawField(void) {
         }
     }
 }
-void drawSelecetLevel(void) {
+void drawSelectLevelPack(void) {
     resetColor();
     setUnderline(1);
-    drawf("Select a level:");
+    drawf("Select a level pack:");
+    setUnderline(0);
+
+    //Draw first line
+	setCursorPos(0, 1);
+	drawf("-");
+	int max = mapCount%24;
+	if(mapCount/24 > 0)
+		max = 24;
+	for(int i = 0;i < max;i++) {
+		int x = 1 + (i%24)*3;
+
+		setCursorPos(x, 1);
+		drawf("---");
+	}
+
+	for(int i = 0;i < mapCount;i++) {
+		int x = 1 + (i%24)*3;
+		int y = 2 + (i/24)*2;
+
+		//First box
+		if(x == 1) {
+			setCursorPos(x - 1, y);
+			drawf("|");
+
+			setCursorPos(x - 1, y + 1);
+			drawf("-");
+		}
+
+		setColor(CL_COLOR_BLACK, CL_COLOR_YELLOW);
+		setCursorPos(x, y);
+		drawf("%2d", i + 1);
+
+		resetColor();
+		drawf("|");
+
+		setCursorPos(x, y + 1);
+		drawf("---");
+	}
+
+	//Mark selected level
+	int x = (currentMapIndex%24)*3;
+	int y = 1 + (currentMapIndex/24)*2;
+
+	setColor(CL_COLOR_CYAN, CL_COLOR_NO_COLOR);
+	setCursorPos(x, y);
+	drawf("----");
+	setCursorPos(x, y + 1);
+	drawf("|");
+	setCursorPos(x + 3, y + 1);
+	drawf("|");
+	setCursorPos(x, y + 2);
+	drawf("----");
+}
+void drawSelectLevel(void) {
+    resetColor();
+    setUnderline(1);
+    drawf("Select a level (Level pack \"%s\"):", pathMapData[currentMapIndex]);
     setUnderline(0);
 
     //Draw first line
@@ -742,9 +866,6 @@ void drawStartMenu(void) {
 }
 
 void initVars(void) {
-    //Field
-    setLevel(0);
-
     //Help
     isHelp = 0;
 
@@ -795,11 +916,16 @@ void setLevel(int lvl) {
 }
 
 void readLevelData(void) {
-    map = fopen(pathMapData, "r+");
+	if(levels != NULL) {
+		levelCount = 0;
+		free(levels);
+	}
+
+    map = fopen(pathMapData[currentMapIndex], "r+");
     char buf[4096];
     if(map == NULL) {
         reset();
-        printf("Can't read map data file \"%s\"!\n", pathMapData);
+        printf("Can't read map data file \"%s\"!\n", pathMapData[currentMapIndex]);
 
         exit(EXIT_FAILURE);
     }
@@ -911,6 +1037,10 @@ void saveLevelData(void) {
         //Write buffer to file
         fflush(map);
     }else {
-        printf("Can't write map data file \"%s\"!\n", pathMapData);
+        printf("Can't write map data file \"%s\"!\n", pathMapData[currentMapIndex]);
     }
+}
+
+int min(int a, int b) {
+	return a < b?a:b;
 }

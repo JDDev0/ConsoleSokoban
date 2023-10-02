@@ -231,7 +231,7 @@ void drawHelp(void) {
 
             setUnderline(0);
             resetColor();
-            drawf("1) No arguments\n2) \"Path to map Data\"");
+            drawf("1) No arguments\n2) \"Path to level pack 1\" \"Path to level pack 2\" ...");
 
             break;
         case 4:
