@@ -921,8 +921,8 @@ void setLevel(int lvl) {
 
 void readLevelData(void) {
 	if(levels != NULL) {
-	    for(int i = 0;i < levelCount;i++)
-	        removeField(levels + i);
+		for(int i = 0;i < levelCount;i++)
+			removeField(levels + i);
 		free(levels);
 
 		selectedLevel = 0;
