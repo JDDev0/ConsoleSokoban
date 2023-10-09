@@ -41,7 +41,9 @@ static void (*drawOld)(void);
 static int mapCount;
 static int currentMapIndex = 0;
 static FILE *map;
+static FILE *mapSave;
 static char pathMapData[MAX_LEVEL_PACK_COUNT][512];
+static char pathMapSaveData[512 + 4];
 
 //Help
 static int isHelp;
@@ -81,8 +83,14 @@ static enum {
 }screen;
 
 void resetGame(void) {
-    if(map != NULL)
+    if(map != NULL) {
         fclose(map);
+        map = NULL;
+    }
+    if(mapSave != NULL) {
+        fclose(mapSave);
+        mapSave = NULL;
+    }
 
     reset();
     freeTableOfContents(&content);
@@ -929,7 +937,7 @@ void readLevelData(void) {
 		levelCount = 0;
 	}
 
-    map = fopen(pathMapData[currentMapIndex], "r+");
+    map = fopen(pathMapData[currentMapIndex], "r");
     char buf[4096];
     if(map == NULL) {
         reset();
@@ -938,14 +946,35 @@ void readLevelData(void) {
         exit(EXIT_FAILURE);
     }
 
-    fscanf(map, "Levels: %d\nMinLevelNotCompleted: %d\n\n", &levelCount,
-    &minLevelNotCompleted);
+    fscanf(map, "Levels: %d\n\n", &levelCount);
     if(levelCount > 99) {
         reset();
         printf("To many levels (Max: 99) (In file: %d)!\n", levelCount);
 
         exit(EXIT_FAILURE);
     }
+
+    strcpy(pathMapSaveData, pathMapData[currentMapIndex]);
+    strcat(pathMapSaveData, ".sav");
+
+    mapSave = fopen(pathMapSaveData, "r+");
+    if(mapSave == NULL) {
+        //File does not yet exist
+        mapSave = fopen(pathMapSaveData, "w+");
+    }
+
+    if(mapSave == NULL) {
+        fclose(map);
+        map = NULL;
+
+        reset();
+        printf("Can't read or create map save file \"%s\"!\n", pathMapSaveData);
+
+        exit(EXIT_FAILURE);
+    }
+    minLevelNotCompleted = 0;
+    fscanf(mapSave, "%d", &minLevelNotCompleted);
+
     if(minLevelNotCompleted > levelCount) //If mLNC == lC -> all levels completed
         minLevelNotCompleted = 0;
 
@@ -1005,47 +1034,15 @@ void readLevelData(void) {
     }
 }
 void saveLevelData(void) {
-    char buf[1048575];
-    if(map != NULL) {
+    if(mapSave != NULL) {
         //Go to start of file
-        rewind(map);
+        rewind(mapSave);
 
-        int i = 0;
-        int c;
-        while((c = fgetc(map)) != EOF) {
-            buf[i] = (char)c;
+        fprintf(mapSave, "%d\n", minLevelNotCompleted);
 
-            i++;
-        }
-        buf[i] = '\0';
-
-        //Go to start of file
-        rewind(map);
-
-        i = 0;
-        while(buf[i] != '\0') {
-            if(buf[i] == 'd') {
-                fprintf(map, "d: %d\n", minLevelNotCompleted);
-
-                //Go to next line in buf
-                i += 3; //First digit
-                while(buf[i] != '\n')
-                    i++;
-
-                //Go after '\n'
-                i++;
-
-                continue;
-            }
-
-            fputc(buf[i], map);
-            i++;
-        }
-
-        //Write buffer to file
-        fflush(map);
+        fflush(mapSave);
     }else {
-        printf("Can't write map data file \"%s\"!\n", pathMapData[currentMapIndex]);
+        printf("Can't read or create map save file \"%s\"!\n", pathMapSaveData);
     }
 }
 
