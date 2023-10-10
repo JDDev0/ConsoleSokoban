@@ -60,7 +60,8 @@ static int playerBackgroundTmp = 0;
 //Level
 static int moves = 0;
 static int oldMoves = 0;
-static time_t timeStart;
+static time_t timeStartInMenu = -1;
+static time_t timeStart = -1;
 static time_t timeSec = 0;
 static time_t timeMin = 0;
 static int playerPosX;
@@ -158,9 +159,19 @@ void update(void) {
 
     //Time
     if(screen == IN_GAME && !continueFlag) {
-        timeSec = (time_t)(difftime(time(NULL), timeStart));
-        timeMin = timeSec/60;
-        timeSec %= 60;
+        if(timeStart == -1) {
+            timeSec = 0;
+            timeMin = 0;
+        }else {
+            time_t timeNow = time(NULL);
+
+            timeSec = (time_t)(difftime(timeNow, timeStart));
+            if(timeStartInMenu > -1)
+                timeSec -= (time_t)(difftime(timeNow, timeStartInMenu));
+
+            timeMin = timeSec/60;
+            timeSec %= 60;
+        }
     }
 
     //Graphics
@@ -181,6 +192,11 @@ void updateKey(int key) {
         isHelp = 0;
         draw = drawOld;
 
+        if(timeStartInMenu != -1 && timeStart != -1)
+            timeStart += (time_t)(difftime(time(NULL), timeStartInMenu));
+
+        timeStartInMenu = -1;
+
         return;
     }
     //Block other inputs if [y]es/[n]o
@@ -195,6 +211,11 @@ void updateKey(int key) {
             }
         }else if(key == 'n') {
             escCheck = 0;
+
+            if(timeStartInMenu != -1 && timeStart != -1)
+                timeStart += (time_t)(difftime(time(NULL), timeStartInMenu));
+
+            timeStartInMenu = -1;
         }
     }else {
         //Help
@@ -203,8 +224,15 @@ void updateKey(int key) {
             if(isHelp) {
                 drawOld = draw;
                 draw = drawHelp;
+
+                timeStartInMenu = time(NULL);
             }else {
                 draw = drawOld;
+
+                if(timeStartInMenu != -1 && timeStart != -1)
+                    timeStart += (time_t)(difftime(time(NULL), timeStartInMenu));
+
+                timeStartInMenu = -1;
             }
 
             return;
@@ -400,6 +428,9 @@ void updateKey(int key) {
                         tmp = GOAL;
                     levelNow.field[playerPosX][playerPosY] = tmp;
 
+                    if(timeStart == -1)
+                        timeStart = time(NULL);
+
                     switch(key) {
                         case CL_KEY_LEFT:
                             switch(levelNow.field[playerPosX - 1][playerPosY]) {
@@ -506,6 +537,8 @@ void updateKey(int key) {
                 draw = drawSelectLevelPack;
             }else {
                 escCheck = 1;
+
+                timeStartInMenu = time(NULL);
             }
         }
     }
@@ -892,7 +925,7 @@ void initVars(void) {
 void setLevel(int lvl) {
     moves = 0;
     timeSec = timeMin = 0;
-    timeStart = time(NULL);
+    timeStart = -1;
 
     level = lvl;
     removeField(&levelNow);
