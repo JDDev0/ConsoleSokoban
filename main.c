@@ -159,7 +159,7 @@ void update(void) {
 
     //Time
     if(screen == IN_GAME && !continueFlag) {
-        if(timeStart == -1) {
+        if(timeStart < 0) {
             timeSec = 0;
             timeMin = 0;
         }else {
@@ -192,7 +192,7 @@ void updateKey(int key) {
         isHelp = 0;
         draw = drawOld;
 
-        if(timeStartInMenu != -1 && timeStart != -1)
+        if(timeStartInMenu > -1 && timeStart > -1)
             timeStart += (time_t)(difftime(time(NULL), timeStartInMenu));
 
         timeStartInMenu = -1;
@@ -212,7 +212,7 @@ void updateKey(int key) {
         }else if(key == 'n') {
             escCheck = 0;
 
-            if(timeStartInMenu != -1 && timeStart != -1)
+            if(timeStartInMenu > -1 && timeStart > -1)
                 timeStart += (time_t)(difftime(time(NULL), timeStartInMenu));
 
             timeStartInMenu = -1;
@@ -229,7 +229,7 @@ void updateKey(int key) {
             }else {
                 draw = drawOld;
 
-                if(timeStartInMenu != -1 && timeStart != -1)
+                if(timeStartInMenu >-1 && timeStart > -1)
                     timeStart += (time_t)(difftime(time(NULL), timeStartInMenu));
 
                 timeStartInMenu = -1;
@@ -428,7 +428,7 @@ void updateKey(int key) {
                         tmp = GOAL;
                     levelNow.field[playerPosX][playerPosY] = tmp;
 
-                    if(timeStart == -1)
+                    if(timeStart < 0)
                         timeStart = time(NULL);
 
                     switch(key) {
@@ -926,6 +926,7 @@ void setLevel(int lvl) {
     moves = 0;
     timeSec = timeMin = 0;
     timeStart = -1;
+    timeStartInMenu = -1;
 
     level = lvl;
     removeField(&levelNow);
