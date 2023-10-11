@@ -1068,7 +1068,7 @@ void readLevelData(void) {
         //"height >=", 1st line: infos
         if(width > gameMinWidth || height >= gameMinHeight) {
             reset();
-            printf("To large level (Max: %d x %d) (Level: %d x %d)!\n", gameMinWidth,
+            printf("Level is too large (Max: %d x %d) (Level: %d x %d)!\n", gameMinWidth,
             gameMinHeight - 1, width, height);
 
             exit(EXIT_FAILURE);
