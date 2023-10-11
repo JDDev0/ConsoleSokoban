@@ -75,6 +75,8 @@ static struct field levelNowLastStep;
 static struct field levelNowTmpStep;
 static int levelCount = 0;
 static struct field *levels;
+static int levelBestTime[99];
+static int levelBestMoves[99];
 
 static const int gameMinWidth = 74;
 static const int gameMinHeight = 23;
@@ -356,12 +358,19 @@ void updateKey(int key) {
                 //Level end
                 if(continueFlag) {
                     if(continueLevelAddFlag) {
-                        if(level >= minLevelNotCompleted) {
+                        if(level >= minLevelNotCompleted)
                             minLevelNotCompleted = level+1;
 
-                            //Save level
-                            saveLevelData();
-                        }
+                        //Update best scores
+                        int bestTime = (int)(timeSec + 60 * timeMin);
+                        if(levelBestTime[level] == -1 || levelBestTime[level] > bestTime)
+                            levelBestTime[level] = bestTime;
+
+                        if(levelBestMoves[level] == -1 || levelBestMoves[level] > moves)
+                            levelBestMoves[level] = moves;
+
+                        //Save level
+                        saveLevelData();
 
                         continueLevelAddFlag = 0;
                     }
@@ -831,6 +840,38 @@ void drawSelectLevel(void) {
     drawf("|");
     setCursorPos(x, y + 2);
     drawf("----");
+
+    //Draw border for best time and best moves
+    y = 4 + (levelCount/24)*2;
+
+    setCursorPos(0, y);
+    setColor(CL_COLOR_CYAN, CL_COLOR_NO_COLOR);
+    drawf(".---------------------.");
+    for(int i = 1;i < 4;i++) {
+        setCursorPos(0, y + i);
+        drawf("|                     |");
+    }
+    setCursorPos(0, y + 4);
+    drawf("\'---------------------\'");
+
+    //Draw best time and best moves
+    resetColor();
+    setCursorPos(1, y + 1);
+    drawf("Selected level:    %02d", selectedLevel + 1);
+    setCursorPos(1, y + 2);
+    drawf("Best time     : ");
+    if(levelBestTime[selectedLevel] < 0) {
+        drawf("XX:XX");
+    }else {
+        drawf("%02d:%02d", levelBestTime[selectedLevel]/60, levelBestTime[selectedLevel]%60);
+    }
+    setCursorPos(1, y + 3);
+    drawf("Best moves    :  ");
+    if(levelBestMoves[selectedLevel] < 0) {
+        drawf("XXXX");
+    }else {
+        drawf("%04d", levelBestMoves[selectedLevel]);
+    }
 }
 void drawStartMenu(void) {
     //Draw border (top)
@@ -1007,10 +1048,16 @@ void readLevelData(void) {
         exit(EXIT_FAILURE);
     }
     minLevelNotCompleted = 0;
-    fscanf(mapSave, "%d", &minLevelNotCompleted);
+    fscanf(mapSave, "%d\n", &minLevelNotCompleted);
 
     if(minLevelNotCompleted > levelCount) //If mLNC == lC -> all levels completed
         minLevelNotCompleted = 0;
+
+    for(int i = 0;i < 99;i++) {
+        levelBestTime[i] = -1;
+        levelBestMoves[i] = -1;
+        fscanf(mapSave, "%d,%d\n", levelBestTime + i, levelBestMoves + i);
+    }
 
     levels = malloc((size_t)levelCount * sizeof(struct field));
 
@@ -1073,6 +1120,9 @@ void saveLevelData(void) {
         rewind(mapSave);
 
         fprintf(mapSave, "%d\n", minLevelNotCompleted);
+
+        for(int i = 0;i < 99;i++)
+            fprintf(mapSave, "%d,%d\n", levelBestTime[i], levelBestMoves[i]);
 
         fflush(mapSave);
     }else {
