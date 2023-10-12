@@ -11,19 +11,27 @@
 #define VERSION "1.1.0"
 
 void resetGame(void);
+
 void init(void);
+
 void update(void);
 void updateKey(int);
 void updateMouse(void);
+
 int moveBox(int posX, int posY, int moveX, int moveY);
+
 void drawField(void);
 void drawSelectLevelPack(void);
 void drawSelectLevel(void);
 void drawStartMenu(void);
+
 void initVars(void);
+
 void setLevel(int lvl);
 void readLevelData(void);
 void saveLevelData(void);
+
+void updateLevelPackStats(int levelPackIndex);
 
 int min(int, int);
 
@@ -75,8 +83,13 @@ static struct field levelNowLastStep;
 static struct field levelNowTmpStep;
 static int levelCount = 0;
 static struct field *levels;
+
 static int levelBestTime[99];
 static int levelBestMoves[99];
+
+static int levelPackAllLevelsBeaten[MAX_LEVEL_PACK_COUNT] = {0};
+static int levelPackBestTimeSum = -1;
+static int levelPackBestMovesSum = -1;
 
 static const int gameMinWidth = 74;
 static const int gameMinHeight = 23;
@@ -130,6 +143,10 @@ int main(int argc, char *argv[]) {
 }
 
 void init(void) {
+    //Load level pack stats
+    for(int i = 0;i < mapCount;i++)
+        updateLevelPackStats(i);
+
     initConsole();
 
     srand((unsigned)time(NULL));
@@ -270,6 +287,8 @@ void updateKey(int key) {
 
                     //Set new draw function
                     draw = drawSelectLevelPack;
+
+                    updateLevelPackStats(currentMapIndex);
                 }
 
                 break;
@@ -281,11 +300,15 @@ void updateKey(int key) {
 
                         currentMapIndex--;
 
+                        updateLevelPackStats(currentMapIndex);
+
                         break;
                     case CL_KEY_UP:
                     	currentMapIndex -= 24;
                         if(currentMapIndex < 0)
                         	currentMapIndex += 24;
+
+                        updateLevelPackStats(currentMapIndex);
 
                         break;
                     case CL_KEY_RIGHT:
@@ -294,11 +317,15 @@ void updateKey(int key) {
 
                         currentMapIndex++;
 
+                        updateLevelPackStats(currentMapIndex);
+
                         break;
                     case CL_KEY_DOWN:
                     	currentMapIndex += 24;
                         if(currentMapIndex >= mapCount)
                         	currentMapIndex -= 24;
+
+                        updateLevelPackStats(currentMapIndex);
 
                         break;
                 }
@@ -544,6 +571,8 @@ void updateKey(int key) {
 
                 //Set new draw function
                 draw = drawSelectLevelPack;
+
+                updateLevelPackStats(currentMapIndex);
             }else {
                 escCheck = 1;
 
@@ -623,6 +652,7 @@ void updateMouse(void) {
         }
     }
 }
+
 int moveBox(int posX, int posY, int moveX, int moveY) {
     enum fieldIDs *tmpIDOld = &levelNow.field[posX][posY];
     enum fieldIDs *tmpIDNew = &levelNow.field[posX + moveX][posY + moveY];
@@ -758,7 +788,7 @@ void drawSelectLevelPack(void) {
 			drawf("-");
 		}
 
-		setColor(CL_COLOR_BLACK, CL_COLOR_YELLOW);
+		setColor(CL_COLOR_BLACK, levelPackAllLevelsBeaten[i]?CL_COLOR_GREEN:CL_COLOR_YELLOW);
 		setCursorPos(x, y);
 		drawf("%2d", i + 1);
 
@@ -782,6 +812,38 @@ void drawSelectLevelPack(void) {
 	drawf("|");
 	setCursorPos(x, y + 2);
 	drawf("----");
+
+    //Draw border for best time and best moves
+    y = 4 + (mapCount/24)*2;
+
+    setCursorPos(0, y);
+    setColor(CL_COLOR_CYAN, CL_COLOR_NO_COLOR);
+    drawf(".-------------------------------.");
+    for(int i = 1;i < 4;i++) {
+        setCursorPos(0, y + i);
+        drawf("|                               |");
+    }
+    setCursorPos(0, y + 4);
+    drawf("\'-------------------------------\'");
+
+    //Draw sum of best time and sum of best moves
+    resetColor();
+    setCursorPos(1, y + 1);
+    drawf("Selected level pack:         %02d", currentMapIndex + 1);
+    setCursorPos(1, y + 2);
+    drawf("Best time sum      : ");
+    if(levelPackBestTimeSum < 0) {
+        drawf("X:XX:XX:XX");
+    }else {
+        drawf("%01d:%02d:%02d:%02d", levelPackBestTimeSum/86400, (levelPackBestTimeSum/3600)%24, (levelPackBestTimeSum/60)%60, levelPackBestTimeSum%60);
+    }
+    setCursorPos(1, y + 3);
+    drawf("Best moves sum     :     ");
+    if(levelPackBestMovesSum < 0) {
+        drawf("XXXXXX");
+    }else {
+        drawf("%06d", levelPackBestMovesSum);
+    }
 }
 void drawSelectLevel(void) {
     resetColor();
@@ -1128,6 +1190,66 @@ void saveLevelData(void) {
     }else {
         printf("Can't read or create map save file \"%s\"!\n", pathMapSaveData);
     }
+}
+
+void updateLevelPackStats(int levelPackIndex) {
+	if(map != NULL) {
+		fclose(map);
+		map = NULL;
+	}
+	if(mapSave != NULL) {
+		fclose(mapSave);
+		mapSave = NULL;
+	}
+
+	levelPackAllLevelsBeaten[levelPackIndex] = 0;
+	levelPackBestTimeSum = -1;
+	levelPackBestMovesSum = -1;
+
+	map = fopen(pathMapData[levelPackIndex], "r");
+	if(map == NULL)
+		return;
+
+	int levelCountTmp = 100;
+
+	fscanf(map, "Levels: %d\n\n", &levelCountTmp);
+	fclose(map);
+	map = NULL;
+	if(levelCountTmp > 99)
+		return;
+
+	strcpy(pathMapSaveData, pathMapData[levelPackIndex]);
+	strcat(pathMapSaveData, ".sav");
+
+	mapSave = fopen(pathMapSaveData, "r+");
+	if(mapSave == NULL)
+		return;
+
+	int minLevelNotCompletedTmp = 0;
+	fscanf(mapSave, "%d\n", &minLevelNotCompletedTmp);
+
+	if(minLevelNotCompletedTmp > levelCountTmp)
+		minLevelNotCompletedTmp = 0;
+
+	levelPackAllLevelsBeaten[levelPackIndex] = minLevelNotCompletedTmp == levelCountTmp;
+
+	levelPackBestTimeSum = 0;
+	levelPackBestMovesSum = 0;
+
+	for(int i = 0;i < levelCountTmp;i++) {
+		int bestTimeTmp = -1;
+		int bestMovesTmp = -1;
+
+		fscanf(mapSave, "%d,%d\n", &bestTimeTmp, &bestMovesTmp);
+
+		if(levelPackBestTimeSum >= 0)
+			levelPackBestTimeSum = bestTimeTmp < 0?-1:(levelPackBestTimeSum + bestTimeTmp);
+
+		if(levelPackBestMovesSum >= 0)
+			levelPackBestMovesSum = bestMovesTmp < 0?-1:(levelPackBestMovesSum + bestMovesTmp);
+	}
+	fclose(mapSave);
+	mapSave = NULL;
 }
 
 int min(int a, int b) {
