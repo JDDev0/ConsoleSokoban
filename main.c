@@ -415,6 +415,10 @@ void updateKey(int key) {
                         }
 
                         setLevel(level);
+                    }else if(key == 'r') {
+                        continueFlag = 0;
+
+                        setLevel(level);
                     }
 
                     break;
