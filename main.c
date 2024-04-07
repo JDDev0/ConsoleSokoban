@@ -44,7 +44,7 @@ static void (*drawOld)(void);
 
 #define TUTORIAL_MAP "tutorial.lvl"
 #define MAIN_MAP "main.lvl"
-#define DAEMON_MAP "daemon.lvl"
+#define DEMON_MAP "demon.lvl"
 
 static int mapCount;
 static int currentMapIndex = 0;
@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
 
     memcpy(pathMapData[i++], TUTORIAL_MAP, min((int)strlen(TUTORIAL_MAP) + 1, 512));
     memcpy(pathMapData[i++], MAIN_MAP, min((int)strlen(MAIN_MAP) + 1, 512));
-    memcpy(pathMapData[i++], DAEMON_MAP, min((int)strlen(DAEMON_MAP) + 1, 512));
+    memcpy(pathMapData[i++], DEMON_MAP, min((int)strlen(DEMON_MAP) + 1, 512));
 
     for(int j = 1;j < argc && i < MAX_LEVEL_PACK_COUNT;j++) //Additional level packs
         memcpy(pathMapData[i++], argv[j], min((int)strlen(argv[j]) + 1, 512));
