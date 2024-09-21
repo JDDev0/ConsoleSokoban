@@ -120,8 +120,8 @@ void resetGame(void) {
 }
 
 int main(int argc, char *argv[]) {
-	//Default level packs
-	int i = 0;
+    //Default level packs
+    int i = 0;
 
     memcpy(pathMapData[i++], TUTORIAL_MAP, min((int)strlen(TUTORIAL_MAP) + 1, 512));
     memcpy(pathMapData[i++], MAIN_MAP, min((int)strlen(MAIN_MAP) + 1, 512));
@@ -197,8 +197,8 @@ void update(void) {
     clrscr();
     //Player background
     if(++playerBackgroundTmp >= playerBackgroundDelay + isPlayerBackground) {
-    	//If isPlayerBackground: wait an additional update (25 updates per second, every half
-    	//second: switch background/foreground colors [12 updates, 13 updates])
+        //If isPlayerBackground: wait an additional update (25 updates per second, every half
+        //second: switch background/foreground colors [12 updates, 13 updates])
         playerBackgroundTmp = 0;
         isPlayerBackground = !isPlayerBackground;
     }
@@ -304,9 +304,9 @@ void updateKey(int key) {
 
                         break;
                     case CL_KEY_UP:
-                    	currentMapIndex -= 24;
+                        currentMapIndex -= 24;
                         if(currentMapIndex < 0)
-                        	currentMapIndex += 24;
+                            currentMapIndex += 24;
 
                         updateLevelPackStats(currentMapIndex);
 
@@ -321,9 +321,9 @@ void updateKey(int key) {
 
                         break;
                     case CL_KEY_DOWN:
-                    	currentMapIndex += 24;
+                        currentMapIndex += 24;
                         if(currentMapIndex >= mapCount)
-                        	currentMapIndex -= 24;
+                            currentMapIndex -= 24;
 
                         updateLevelPackStats(currentMapIndex);
 
@@ -565,12 +565,12 @@ void updateKey(int key) {
 
         //Exit game
         if(key == CL_KEY_ESC) {
-        	if(screen == SELECT_LEVEL_PACK) {
-				screen = START_MENU;
+            if(screen == SELECT_LEVEL_PACK) {
+                screen = START_MENU;
 
-				//Set new draw function
-				draw = drawStartMenu;
-			}else if(screen == SELECT_LEVEL) {
+                //Set new draw function
+                draw = drawStartMenu;
+            }else if(screen == SELECT_LEVEL) {
                 screen = SELECT_LEVEL_PACK;
 
                 //Set new draw function
@@ -634,7 +634,7 @@ void updateMouse(void) {
 
                 int mapIndex = column/3 + (row - 1)/2*24;
                 if(mapIndex < mapCount) {
-                	currentMapIndex = mapIndex;
+                    currentMapIndex = mapIndex;
                     updateKey(CL_KEY_ENTER);
                 }
 
@@ -767,55 +767,55 @@ void drawSelectLevelPack(void) {
     setUnderline(0);
 
     //Draw first line
-	setCursorPos(0, 1);
-	drawf("-");
-	int max = mapCount%24;
-	if(mapCount/24 > 0)
-		max = 24;
-	for(int i = 0;i < max;i++) {
-		int x = 1 + (i%24)*3;
+    setCursorPos(0, 1);
+    drawf("-");
+    int max = mapCount%24;
+    if(mapCount/24 > 0)
+        max = 24;
+    for(int i = 0;i < max;i++) {
+        int x = 1 + (i%24)*3;
 
-		setCursorPos(x, 1);
-		drawf("---");
-	}
+        setCursorPos(x, 1);
+        drawf("---");
+    }
 
-	for(int i = 0;i < mapCount;i++) {
-		int x = 1 + (i%24)*3;
-		int y = 2 + (i/24)*2;
+    for(int i = 0;i < mapCount;i++) {
+        int x = 1 + (i%24)*3;
+        int y = 2 + (i/24)*2;
 
-		//First box
-		if(x == 1) {
-			setCursorPos(x - 1, y);
-			drawf("|");
+        //First box
+        if(x == 1) {
+            setCursorPos(x - 1, y);
+            drawf("|");
 
-			setCursorPos(x - 1, y + 1);
-			drawf("-");
-		}
+            setCursorPos(x - 1, y + 1);
+            drawf("-");
+        }
 
-		setColor(CL_COLOR_BLACK, levelPackAllLevelsBeaten[i]?CL_COLOR_GREEN:CL_COLOR_YELLOW);
-		setCursorPos(x, y);
-		drawf("%2d", i + 1);
+        setColor(CL_COLOR_BLACK, levelPackAllLevelsBeaten[i]?CL_COLOR_GREEN:CL_COLOR_YELLOW);
+        setCursorPos(x, y);
+        drawf("%2d", i + 1);
 
-		resetColor();
-		drawf("|");
+        resetColor();
+        drawf("|");
 
-		setCursorPos(x, y + 1);
-		drawf("---");
-	}
+        setCursorPos(x, y + 1);
+        drawf("---");
+    }
 
-	//Mark selected level
-	int x = (currentMapIndex%24)*3;
-	int y = 1 + (currentMapIndex/24)*2;
+    //Mark selected level
+    int x = (currentMapIndex%24)*3;
+    int y = 1 + (currentMapIndex/24)*2;
 
-	setColor(CL_COLOR_CYAN, CL_COLOR_NO_COLOR);
-	setCursorPos(x, y);
-	drawf("----");
-	setCursorPos(x, y + 1);
-	drawf("|");
-	setCursorPos(x + 3, y + 1);
-	drawf("|");
-	setCursorPos(x, y + 2);
-	drawf("----");
+    setColor(CL_COLOR_CYAN, CL_COLOR_NO_COLOR);
+    setCursorPos(x, y);
+    drawf("----");
+    setCursorPos(x, y + 1);
+    drawf("|");
+    setCursorPos(x + 3, y + 1);
+    drawf("|");
+    setCursorPos(x, y + 2);
+    drawf("----");
 
     //Draw border for best time and best moves
     y = 4 + (mapCount/24)*2;
@@ -1069,14 +1069,14 @@ void setLevel(int lvl) {
 }
 
 void readLevelData(void) {
-	if(levels != NULL) {
-		for(int i = 0;i < levelCount;i++)
-			removeField(levels + i);
-		free(levels);
+    if(levels != NULL) {
+        for(int i = 0;i < levelCount;i++)
+            removeField(levels + i);
+        free(levels);
 
-		selectedLevel = 0;
-		levelCount = 0;
-	}
+        selectedLevel = 0;
+        levelCount = 0;
+    }
 
     map = fopen(pathMapData[currentMapIndex], "r");
     char buf[4096];
@@ -1197,65 +1197,65 @@ void saveLevelData(void) {
 }
 
 void updateLevelPackStats(int levelPackIndex) {
-	if(map != NULL) {
-		fclose(map);
-		map = NULL;
-	}
-	if(mapSave != NULL) {
-		fclose(mapSave);
-		mapSave = NULL;
-	}
+    if(map != NULL) {
+        fclose(map);
+        map = NULL;
+    }
+    if(mapSave != NULL) {
+        fclose(mapSave);
+        mapSave = NULL;
+    }
 
-	levelPackAllLevelsBeaten[levelPackIndex] = 0;
-	levelPackBestTimeSum = -1;
-	levelPackBestMovesSum = -1;
+    levelPackAllLevelsBeaten[levelPackIndex] = 0;
+    levelPackBestTimeSum = -1;
+    levelPackBestMovesSum = -1;
 
-	map = fopen(pathMapData[levelPackIndex], "r");
-	if(map == NULL)
-		return;
+    map = fopen(pathMapData[levelPackIndex], "r");
+    if(map == NULL)
+        return;
 
-	int levelCountTmp = 100;
+    int levelCountTmp = 100;
 
-	fscanf(map, "Levels: %d\n\n", &levelCountTmp);
-	fclose(map);
-	map = NULL;
-	if(levelCountTmp > 99)
-		return;
+    fscanf(map, "Levels: %d\n\n", &levelCountTmp);
+    fclose(map);
+    map = NULL;
+    if(levelCountTmp > 99)
+        return;
 
-	strcpy(pathMapSaveData, pathMapData[levelPackIndex]);
-	strcat(pathMapSaveData, ".sav");
+    strcpy(pathMapSaveData, pathMapData[levelPackIndex]);
+    strcat(pathMapSaveData, ".sav");
 
-	mapSave = fopen(pathMapSaveData, "r+");
-	if(mapSave == NULL)
-		return;
+    mapSave = fopen(pathMapSaveData, "r+");
+    if(mapSave == NULL)
+        return;
 
-	int minLevelNotCompletedTmp = 0;
-	fscanf(mapSave, "%d\n", &minLevelNotCompletedTmp);
+    int minLevelNotCompletedTmp = 0;
+    fscanf(mapSave, "%d\n", &minLevelNotCompletedTmp);
 
-	if(minLevelNotCompletedTmp > levelCountTmp)
-		minLevelNotCompletedTmp = 0;
+    if(minLevelNotCompletedTmp > levelCountTmp)
+        minLevelNotCompletedTmp = 0;
 
-	levelPackAllLevelsBeaten[levelPackIndex] = minLevelNotCompletedTmp == levelCountTmp;
+    levelPackAllLevelsBeaten[levelPackIndex] = minLevelNotCompletedTmp == levelCountTmp;
 
-	levelPackBestTimeSum = 0;
-	levelPackBestMovesSum = 0;
+    levelPackBestTimeSum = 0;
+    levelPackBestMovesSum = 0;
 
-	for(int i = 0;i < levelCountTmp;i++) {
-		int bestTimeTmp = -1;
-		int bestMovesTmp = -1;
+    for(int i = 0;i < levelCountTmp;i++) {
+        int bestTimeTmp = -1;
+        int bestMovesTmp = -1;
 
-		fscanf(mapSave, "%d,%d\n", &bestTimeTmp, &bestMovesTmp);
+        fscanf(mapSave, "%d,%d\n", &bestTimeTmp, &bestMovesTmp);
 
-		if(levelPackBestTimeSum >= 0)
-			levelPackBestTimeSum = bestTimeTmp < 0?-1:(levelPackBestTimeSum + bestTimeTmp);
+        if(levelPackBestTimeSum >= 0)
+            levelPackBestTimeSum = bestTimeTmp < 0?-1:(levelPackBestTimeSum + bestTimeTmp);
 
-		if(levelPackBestMovesSum >= 0)
-			levelPackBestMovesSum = bestMovesTmp < 0?-1:(levelPackBestMovesSum + bestMovesTmp);
-	}
-	fclose(mapSave);
-	mapSave = NULL;
+        if(levelPackBestMovesSum >= 0)
+            levelPackBestMovesSum = bestMovesTmp < 0?-1:(levelPackBestMovesSum + bestMovesTmp);
+    }
+    fclose(mapSave);
+    mapSave = NULL;
 }
 
 int min(int a, int b) {
-	return a < b?a:b;
+    return a < b?a:b;
 }
