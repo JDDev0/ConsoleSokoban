@@ -4,9 +4,8 @@ A sokoban game for Console (Linux, Windows)
 
 ## Compile & Run
 ### Linux
-- Required packages: `make`, `gcc`, `libncurses-dev`
+- Required packages: `cmake`, `make`, `gcc`, `libncurses-dev`
 
-1. `cd Release`
-2. `make all`
-3. `cd ..`
-4. `Release/Sokoban`
+1. `cmake -DCMAKE_BUILD_TYPE=Release -S . -B release`
+2. `cmake --build release`
+3. `release/Sokoban`
