@@ -2,6 +2,9 @@
 
 A sokoban game for Console (Linux, Windows)
 
+## Gameplay
+![image](https://github.com/user-attachments/assets/e8215abb-7437-47c4-a971-4d613405cef6)
+
 ## Compile & Run
 ### Linux
 - Required packages: `cmake`, `make`, `gcc`, `libncurses-dev`
