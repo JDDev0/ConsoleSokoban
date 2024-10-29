@@ -147,8 +147,6 @@ void init(void) {
 
     initConsole();
 
-    srand((unsigned)time(NULL));
-
     int widthCon, heightCon;
     getConsoleSize(&widthCon, &heightCon);
     if(widthCon < gameMinWidth || heightCon < gameMinHeight) {
@@ -169,7 +167,7 @@ void init(void) {
 
 void update(void) {
     //Input
-    if(hasInput()) { //If has key input: call updateKey
+    if(hasInput()) {
         updateKey(getKey());
     }
     updateMouse();
@@ -1076,7 +1074,6 @@ void readLevelData(void) {
         levelCount = 0;
     }
 
-    char buf[4096];
     char mapData[65536];
     int mapDataByteOffset = 0;
     int bytesRead = 0;
@@ -1164,6 +1161,7 @@ void readLevelData(void) {
 
     int width, height;
     for(int i = 0;i < levelCount;i++) {
+        char buf[4096];
         sscanf(mapData + mapDataByteOffset, "w: %d, h: %d\n%n", &width, &height, &bytesRead);
         mapDataByteOffset += bytesRead;
 
