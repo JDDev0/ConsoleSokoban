@@ -8,6 +8,10 @@
 #include "gameField.h"
 #include "helpMenu.h"
 
+#include "map_tutorial.h"
+#include "map_main.h"
+#include "map_demon.h"
+
 #define VERSION "1.1.0"
 
 void resetGame(void);
@@ -34,6 +38,7 @@ void saveLevelData(void);
 void updateLevelPackStats(int levelPackIndex);
 
 int min(int, int);
+long min_l(long, long);
 
 //Set funcPtr to drawField after START_MENU
 static void (*draw)(void);
@@ -42,13 +47,10 @@ static void (*drawOld)(void);
 //Maps
 #define MAX_LEVEL_PACK_COUNT 64
 
-#define TUTORIAL_MAP "tutorial.lvl"
-#define MAIN_MAP "main.lvl"
-#define DEMON_MAP "demon.lvl"
+const char build_in_map_prefix[] = "build-in:";
 
 static int mapCount;
 static int currentMapIndex = 0;
-static FILE *map;
 static FILE *mapSave;
 static char pathMapData[MAX_LEVEL_PACK_COUNT][512];
 static char pathMapSaveData[512 + 4];
@@ -99,10 +101,6 @@ static enum {
 }screen;
 
 void resetGame(void) {
-    if(map != NULL) {
-        fclose(map);
-        map = NULL;
-    }
     if(mapSave != NULL) {
         fclose(mapSave);
         mapSave = NULL;
@@ -123,9 +121,9 @@ int main(int argc, char *argv[]) {
     //Default level packs
     int i = 0;
 
-    memcpy(pathMapData[i++], TUTORIAL_MAP, min((int)strlen(TUTORIAL_MAP) + 1, 512));
-    memcpy(pathMapData[i++], MAIN_MAP, min((int)strlen(MAIN_MAP) + 1, 512));
-    memcpy(pathMapData[i++], DEMON_MAP, min((int)strlen(DEMON_MAP) + 1, 512));
+    memcpy(pathMapData[i++], tutorial_map_id, min((int)strlen(tutorial_map_id) + 1, 512));
+    memcpy(pathMapData[i++], main_map_id, min((int)strlen(main_map_id) + 1, 512));
+    memcpy(pathMapData[i++], demon_map_id, min((int)strlen(demon_map_id) + 1, 512));
 
     for(int j = 1;j < argc && i < MAX_LEVEL_PACK_COUNT;j++) //Additional level packs
         memcpy(pathMapData[i++], argv[j], min((int)strlen(argv[j]) + 1, 512));
@@ -1078,25 +1076,65 @@ void readLevelData(void) {
         levelCount = 0;
     }
 
-    map = fopen(pathMapData[currentMapIndex], "r");
     char buf[4096];
-    if(map == NULL) {
-        reset();
-        printf("Can't read map data file \"%s\"!\n", pathMapData[currentMapIndex]);
+    char mapData[65536];
+    int mapDataByteOffset = 0;
+    int bytesRead = 0;
+    if(strlen(build_in_map_prefix) <= strlen(pathMapData[currentMapIndex]) &&
+        memcmp(build_in_map_prefix, pathMapData[currentMapIndex], strlen(build_in_map_prefix)) == 0) {
+        //build-in map
 
-        exit(EXIT_FAILURE);
+        if(strlen(tutorial_map_id) <= strlen(pathMapData[currentMapIndex]) &&
+            memcmp(tutorial_map_id, pathMapData[currentMapIndex], strlen(tutorial_map_id)) == 0) {
+            memcpy(mapData, tutorial_map_data, strlen(tutorial_map_data) + 1);
+
+            strcpy(pathMapSaveData, "tutorial.lvl.sav");
+        }else if(strlen(main_map_id) <= strlen(pathMapData[currentMapIndex]) &&
+            memcmp(main_map_id, pathMapData[currentMapIndex], strlen(main_map_id)) == 0) {
+            memcpy(mapData, main_map_data, strlen(main_map_data) + 1);
+
+            strcpy(pathMapSaveData, "main.lvl.sav");
+        }else if(strlen(demon_map_id) <= strlen(pathMapData[currentMapIndex]) &&
+            memcmp(demon_map_id, pathMapData[currentMapIndex], strlen(demon_map_id)) == 0) {
+            memcpy(mapData, demon_map_data, strlen(demon_map_data) + 1);
+
+            strcpy(pathMapSaveData, "demon.lvl.sav");
+        }else {
+            reset();
+            printf("Can't read build-in map data file \"%s\"!\n", pathMapData[currentMapIndex]);
+
+            exit(EXIT_FAILURE);
+        }
+    }else {
+        FILE *map = fopen(pathMapData[currentMapIndex], "r");
+        if(map == NULL) {
+            reset();
+            printf("Can't read map data file \"%s\"!\n", pathMapData[currentMapIndex]);
+
+            exit(EXIT_FAILURE);
+        }
+
+        strcpy(pathMapSaveData, pathMapData[currentMapIndex]);
+        strcat(pathMapSaveData, ".sav");
+
+        fseek(map, 0, SEEK_END);
+        long fileSize = ftell(map);
+        fseek(map, 0, SEEK_SET);
+
+        fread(mapData, min_l(fileSize, 65536), 1, map);
+
+        fclose(map);
+        map = NULL;
     }
 
-    fscanf(map, "Levels: %d\n\n", &levelCount);
+    sscanf(mapData + mapDataByteOffset, "Levels: %d\n\n%n", &levelCount, &bytesRead);
+    mapDataByteOffset += bytesRead;
     if(levelCount > 99) {
         reset();
         printf("To many levels (Max: 99) (In file: %d)!\n", levelCount);
 
         exit(EXIT_FAILURE);
     }
-
-    strcpy(pathMapSaveData, pathMapData[currentMapIndex]);
-    strcat(pathMapSaveData, ".sav");
 
     mapSave = fopen(pathMapSaveData, "r+");
     if(mapSave == NULL) {
@@ -1105,9 +1143,6 @@ void readLevelData(void) {
     }
 
     if(mapSave == NULL) {
-        fclose(map);
-        map = NULL;
-
         reset();
         printf("Can't read or create map save file \"%s\"!\n", pathMapSaveData);
 
@@ -1129,7 +1164,8 @@ void readLevelData(void) {
 
     int width, height;
     for(int i = 0;i < levelCount;i++) {
-        fscanf(map, "w: %d, h: %d\n", &width, &height);
+        sscanf(mapData + mapDataByteOffset, "w: %d, h: %d\n%n", &width, &height, &bytesRead);
+        mapDataByteOffset += bytesRead;
 
         //"height >=", 1st line: infos
         if(width > gameMinWidth || height >= gameMinHeight) {
@@ -1140,9 +1176,12 @@ void readLevelData(void) {
             exit(EXIT_FAILURE);
         }
 
-        for(int j = 0;j < height;j++)
-            fscanf(map, "%s", buf + j*width);
-        fscanf(map, "\n");
+        for(int j = 0;j < height;j++) {
+            sscanf(mapData + mapDataByteOffset, "%s%n", buf + j*width, &bytesRead);
+            mapDataByteOffset += bytesRead;
+        }
+        sscanf(mapData + mapDataByteOffset, "\n%n", &bytesRead);
+        mapDataByteOffset += bytesRead;
 
         initField(levels + i, width, height);
         for(int j = 0;j < width;j++) {
@@ -1197,10 +1236,6 @@ void saveLevelData(void) {
 }
 
 void updateLevelPackStats(int levelPackIndex) {
-    if(map != NULL) {
-        fclose(map);
-        map = NULL;
-    }
     if(mapSave != NULL) {
         fclose(mapSave);
         mapSave = NULL;
@@ -1210,20 +1245,53 @@ void updateLevelPackStats(int levelPackIndex) {
     levelPackBestTimeSum = -1;
     levelPackBestMovesSum = -1;
 
-    map = fopen(pathMapData[levelPackIndex], "r");
-    if(map == NULL)
-        return;
-
     int levelCountTmp = 100;
 
-    fscanf(map, "Levels: %d\n\n", &levelCountTmp);
-    fclose(map);
-    map = NULL;
+    if(strlen(build_in_map_prefix) <= strlen(pathMapData[currentMapIndex]) &&
+        memcmp(build_in_map_prefix, pathMapData[currentMapIndex], strlen(build_in_map_prefix)) == 0) {
+        //build-in map
+
+        if(strlen(tutorial_map_id) <= strlen(pathMapData[currentMapIndex]) &&
+            memcmp(tutorial_map_id, pathMapData[currentMapIndex], strlen(tutorial_map_id)) == 0) {
+            sscanf(tutorial_map_data, "Levels: %d\n\n", &levelCountTmp);
+
+            strcpy(pathMapSaveData, "tutorial.lvl.sav");
+        }else if(strlen(main_map_id) <= strlen(pathMapData[currentMapIndex]) &&
+            memcmp(main_map_id, pathMapData[currentMapIndex], strlen(main_map_id)) == 0) {
+            sscanf(main_map_data, "Levels: %d\n\n", &levelCountTmp);
+
+            strcpy(pathMapSaveData, "main.lvl.sav");
+        }else if(strlen(demon_map_id) <= strlen(pathMapData[currentMapIndex]) &&
+            memcmp(demon_map_id, pathMapData[currentMapIndex], strlen(demon_map_id)) == 0) {
+            sscanf(demon_map_data, "Levels: %d\n\n", &levelCountTmp);
+
+            strcpy(pathMapSaveData, "demon.lvl.sav");
+        }else {
+            reset();
+            printf("Can't read build-in map data file \"%s\"!\n", pathMapData[currentMapIndex]);
+
+            exit(EXIT_FAILURE);
+        }
+    }else {
+        FILE *map = fopen(pathMapData[currentMapIndex], "r");
+        if(map == NULL) {
+            reset();
+            printf("Can't read map data file \"%s\"!\n", pathMapData[currentMapIndex]);
+
+            exit(EXIT_FAILURE);
+        }
+
+        strcpy(pathMapSaveData, pathMapData[currentMapIndex]);
+        strcat(pathMapSaveData, ".sav");
+
+        fscanf(map, "Levels: %d\n\n", &levelCountTmp);
+
+        fclose(map);
+        map = NULL;
+    }
+
     if(levelCountTmp > 99)
         return;
-
-    strcpy(pathMapSaveData, pathMapData[levelPackIndex]);
-    strcat(pathMapSaveData, ".sav");
 
     mapSave = fopen(pathMapSaveData, "r+");
     if(mapSave == NULL)
@@ -1257,5 +1325,9 @@ void updateLevelPackStats(int levelPackIndex) {
 }
 
 int min(int a, int b) {
+    return a < b?a:b;
+}
+
+long min_l(long a, long b) {
     return a < b?a:b;
 }
