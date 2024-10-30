@@ -39,6 +39,8 @@
 
     void getMousePosClicked(int *column, int *row);
 
+    void makeDirectory(const char* name);
+
     void sleepMS(unsigned int time);
 
     void drawf(const char *restrict format, ...);

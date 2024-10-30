@@ -9,6 +9,7 @@
     #include <curses.h>
     #include <unistd.h>
     #include <inttypes.h>
+    #include <sys/stat.h>
 
     static int TMP_KEY_F0 = CL_KEY_F1 - 1;
     static int columnTmp, rowTmp, columns, rows;
@@ -131,6 +132,10 @@
 
         *column = -1;
         *row = -1;
+    }
+
+    void makeDirectory(const char* name) {
+        mkdir(name, 0755);
     }
 
     void sleepMS(unsigned int time) {
@@ -363,6 +368,10 @@
 
         *column = -1;
         *row = -1;
+    }
+
+    void makeDirectory(const char* name) {
+        _mkdir(name);
     }
 
     void sleepMS(unsigned int time) {

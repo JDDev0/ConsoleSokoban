@@ -3,6 +3,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <sys/stat.h>
+
 #include "consoleLib.h"
 #include "consoleMenu.h"
 #include "gameField.h"
@@ -53,7 +55,7 @@ static int mapCount;
 static int currentMapIndex = 0;
 static FILE *mapSave;
 static char pathMapData[MAX_LEVEL_PACK_COUNT][512];
-static char pathMapSaveData[512 + 4];
+static char pathMapSaveData[2048];
 
 //Help
 static int isHelp;
@@ -1074,6 +1076,13 @@ void readLevelData(void) {
         levelCount = 0;
     }
 
+    strcpy(pathMapSaveData, getenv("HOME"));
+    strcat(pathMapSaveData, "/.jddev0");
+    makeDirectory(pathMapSaveData);
+    strcat(pathMapSaveData, "/ConsoleSokoban");
+    makeDirectory(pathMapSaveData);
+    strcat(pathMapSaveData, "/");
+
     char mapData[65536];
     int mapDataByteOffset = 0;
     int bytesRead = 0;
@@ -1085,17 +1094,17 @@ void readLevelData(void) {
             memcmp(tutorial_map_id, pathMapData[currentMapIndex], strlen(tutorial_map_id)) == 0) {
             memcpy(mapData, tutorial_map_data, strlen(tutorial_map_data) + 1);
 
-            strcpy(pathMapSaveData, "tutorial.lvl.sav");
+            strcat(pathMapSaveData, "tutorial.lvl.sav");
         }else if(strlen(main_map_id) <= strlen(pathMapData[currentMapIndex]) &&
             memcmp(main_map_id, pathMapData[currentMapIndex], strlen(main_map_id)) == 0) {
             memcpy(mapData, main_map_data, strlen(main_map_data) + 1);
 
-            strcpy(pathMapSaveData, "main.lvl.sav");
+            strcat(pathMapSaveData, "main.lvl.sav");
         }else if(strlen(demon_map_id) <= strlen(pathMapData[currentMapIndex]) &&
             memcmp(demon_map_id, pathMapData[currentMapIndex], strlen(demon_map_id)) == 0) {
             memcpy(mapData, demon_map_data, strlen(demon_map_data) + 1);
 
-            strcpy(pathMapSaveData, "demon.lvl.sav");
+            strcat(pathMapSaveData, "demon.lvl.sav");
         }else {
             reset();
             printf("Can't read build-in map data file \"%s\"!\n", pathMapData[currentMapIndex]);
@@ -1111,7 +1120,7 @@ void readLevelData(void) {
             exit(EXIT_FAILURE);
         }
 
-        strcpy(pathMapSaveData, pathMapData[currentMapIndex]);
+        strcat(pathMapSaveData, pathMapData[currentMapIndex]);
         strcat(pathMapSaveData, ".sav");
 
         fseek(map, 0, SEEK_END);
@@ -1245,6 +1254,13 @@ void updateLevelPackStats(int levelPackIndex) {
 
     int levelCountTmp = 100;
 
+    strcpy(pathMapSaveData, getenv("HOME"));
+    strcat(pathMapSaveData, "/.jddev0");
+    makeDirectory(pathMapSaveData);
+    strcat(pathMapSaveData, "/ConsoleSokoban");
+    makeDirectory(pathMapSaveData);
+    strcat(pathMapSaveData, "/");
+
     if(strlen(build_in_map_prefix) <= strlen(pathMapData[currentMapIndex]) &&
         memcmp(build_in_map_prefix, pathMapData[currentMapIndex], strlen(build_in_map_prefix)) == 0) {
         //build-in map
@@ -1253,17 +1269,17 @@ void updateLevelPackStats(int levelPackIndex) {
             memcmp(tutorial_map_id, pathMapData[currentMapIndex], strlen(tutorial_map_id)) == 0) {
             sscanf(tutorial_map_data, "Levels: %d\n\n", &levelCountTmp);
 
-            strcpy(pathMapSaveData, "tutorial.lvl.sav");
+            strcat(pathMapSaveData, "tutorial.lvl.sav");
         }else if(strlen(main_map_id) <= strlen(pathMapData[currentMapIndex]) &&
             memcmp(main_map_id, pathMapData[currentMapIndex], strlen(main_map_id)) == 0) {
             sscanf(main_map_data, "Levels: %d\n\n", &levelCountTmp);
 
-            strcpy(pathMapSaveData, "main.lvl.sav");
+            strcat(pathMapSaveData, "main.lvl.sav");
         }else if(strlen(demon_map_id) <= strlen(pathMapData[currentMapIndex]) &&
             memcmp(demon_map_id, pathMapData[currentMapIndex], strlen(demon_map_id)) == 0) {
             sscanf(demon_map_data, "Levels: %d\n\n", &levelCountTmp);
 
-            strcpy(pathMapSaveData, "demon.lvl.sav");
+            strcat(pathMapSaveData, "demon.lvl.sav");
         }else {
             reset();
             printf("Can't read build-in map data file \"%s\"!\n", pathMapData[currentMapIndex]);
@@ -1279,7 +1295,7 @@ void updateLevelPackStats(int levelPackIndex) {
             exit(EXIT_FAILURE);
         }
 
-        strcpy(pathMapSaveData, pathMapData[currentMapIndex]);
+        strcat(pathMapSaveData, pathMapData[currentMapIndex]);
         strcat(pathMapSaveData, ".sav");
 
         fscanf(map, "Levels: %d\n\n", &levelCountTmp);
