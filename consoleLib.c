@@ -138,6 +138,15 @@
         mkdir(name, 0755);
     }
 
+    void getConfigPathPrefix(char* dest) {
+        strcpy(dest, getenv("HOME"));
+        strcat(dest, "/.jddev0");
+        makeDirectory(dest);
+        strcat(dest, "/ConsoleSokoban");
+        makeDirectory(dest);
+        strcat(dest, "/");
+    }
+
     void sleepMS(unsigned int time) {
         usleep(time * 1000);
     }
@@ -372,6 +381,16 @@
 
     void makeDirectory(const char* name) {
         _mkdir(name);
+    }
+
+    void getConfigPathPrefix(char* dest) {
+        strcpy(dest, getenv("HOMEDRIVE"));
+        strcat(dest, getenv("HOMEPATH"));
+        strcat(dest, "/.jddev0");
+        makeDirectory(dest);
+        strcat(dest, "/ConsoleSokoban");
+        makeDirectory(dest);
+        strcat(dest, "/");
     }
 
     void sleepMS(unsigned int time) {

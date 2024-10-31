@@ -1076,12 +1076,7 @@ void readLevelData(void) {
         levelCount = 0;
     }
 
-    strcpy(pathMapSaveData, getenv("HOME"));
-    strcat(pathMapSaveData, "/.jddev0");
-    makeDirectory(pathMapSaveData);
-    strcat(pathMapSaveData, "/ConsoleSokoban");
-    makeDirectory(pathMapSaveData);
-    strcat(pathMapSaveData, "/");
+    getConfigPathPrefix(pathMapSaveData);
 
     char mapData[65536];
     int mapDataByteOffset = 0;
@@ -1254,12 +1249,7 @@ void updateLevelPackStats(int levelPackIndex) {
 
     int levelCountTmp = 100;
 
-    strcpy(pathMapSaveData, getenv("HOME"));
-    strcat(pathMapSaveData, "/.jddev0");
-    makeDirectory(pathMapSaveData);
-    strcat(pathMapSaveData, "/ConsoleSokoban");
-    makeDirectory(pathMapSaveData);
-    strcat(pathMapSaveData, "/");
+    getConfigPathPrefix(pathMapSaveData);
 
     if(strlen(build_in_map_prefix) <= strlen(pathMapData[currentMapIndex]) &&
         memcmp(build_in_map_prefix, pathMapData[currentMapIndex], strlen(build_in_map_prefix)) == 0) {

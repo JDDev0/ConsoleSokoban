@@ -2,6 +2,8 @@
 #define CONSOLE_LIB_H
     #define CONSOLE_LIB_VER "v0.0.1"
 
+    #define CONFIG_PATH_FOLDER "ConsoleSokoban"
+
     //Keys
     //Arrow keys
     #define CL_KEY_LEFT   5000
@@ -40,6 +42,8 @@
     void getMousePosClicked(int *column, int *row);
 
     void makeDirectory(const char* name);
+
+    void getConfigPathPrefix(char* dest);
 
     void sleepMS(unsigned int time);
 
