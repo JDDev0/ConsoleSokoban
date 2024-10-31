@@ -46,6 +46,4 @@ if(UNIX)
     target_link_libraries(Sokoban ${CURSES_LIBRARIES})
 
     target_link_libraries(Sokoban m)
-elseif(WIN32)
-    # TODO windows
 endif()
