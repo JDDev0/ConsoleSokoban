@@ -13,8 +13,8 @@
 
     static int TMP_KEY_F0 = CL_KEY_F1 - 1;
     static int columnTmp, rowTmp, columns, rows;
-    static char *drawBuf;
-    static MEVENT *mev;
+    static char *drawBuf = NULL;
+    static MEVENT *mev = NULL;
     static uint16_t colorIDMap[9][9]; //[FG][BG][Bit(0): hasColor, Bit(1 - 8): ID]
     static short lastColorPairID = 1;
     void clrscr(void) {
@@ -55,8 +55,17 @@
         clrscr();
         resetColor();
         setUnderline(0);
-        free(drawBuf);
-        free(mev);
+
+        if(drawBuf) {
+            free(drawBuf);
+            drawBuf = NULL;
+        }
+
+        if(mev) {
+            free(mev);
+            mev = NULL;
+        }
+
         endwin();
     }
 
