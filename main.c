@@ -218,9 +218,9 @@ void updateKey(int key) {
 
         return;
     }
-    //Block other inputs if [y]es/[n]o
-    if(escCheck) {
-        if(key == 'y') {
+    //Block other inputs if [y]es/[n]o (Exit game immediately if GAME_OVER and ESC was pressed)
+    if(escCheck || (screen == GAME_OVER && key == CL_KEY_ESC)) {
+        if(key == 'y' || (screen == GAME_OVER && key == CL_KEY_ESC)) {
             if(screen == START_MENU) {
                 //Exit game
                 exit(EXIT_SUCCESS);
@@ -766,6 +766,185 @@ void drawField(void) {
             drawf("%c", getCharFromField(&levelNow, j, i, isPlayerBackground));
         }
         drawf("\n");
+    }
+
+    //Draw special help text for tutorial levels (tutorial pack and tutorial levels in special pack)
+    if(currentMapIndex == 0) { //Tutorial pack
+        resetColor();
+        switch(level) {
+            case 0:
+                if(continueFlag) {
+                    setCursorPos(18, 8);
+                    drawf("Press ");
+
+                    setColor(CL_COLOR_RED, CL_COLOR_NO_COLOR);
+                    drawf("ENTER");
+
+                    resetColor();
+                    drawf(" to go to the next level...");
+                }else {
+                    setCursorPos(17, 8);
+                    drawf("Use the arrow keys (< ^ > v) to move...");
+                }
+
+                break;
+            case 1:
+                setCursorPos(16, 8);
+                drawf("Boxes (");
+
+                setColor(CL_COLOR_LIGHT_CYAN, CL_COLOR_NO_COLOR);
+                drawf("@");
+
+                resetColor();
+                drawf(") must be placed on ");
+
+                setColor(CL_COLOR_RED, CL_COLOR_NO_COLOR);
+                drawf("all");
+
+                resetColor();
+                drawf(" goals (");
+
+                setColor(CL_COLOR_RED, CL_COLOR_NO_COLOR);
+                drawf("x");
+
+                resetColor();
+                drawf(")");
+
+                break;
+
+            case 2:
+                setCursorPos(14, 8);
+                drawf("Some boxes (");
+
+                setColor(CL_COLOR_LIGHT_PINK, CL_COLOR_NO_COLOR);
+                drawf("@");
+
+                resetColor();
+                drawf(") might already be in a goal (");
+
+                setColor(CL_COLOR_RED, CL_COLOR_NO_COLOR);
+                drawf("x");
+
+                resetColor();
+                drawf(")");
+
+            break;
+
+            case 3:
+                setCursorPos(14, 8);
+                drawf("Not all boxes (");
+
+                setColor(CL_COLOR_LIGHT_CYAN, CL_COLOR_NO_COLOR);
+                drawf("@");
+
+                resetColor();
+                drawf(") must be in a goal (");
+
+                setColor(CL_COLOR_RED, CL_COLOR_NO_COLOR);
+                drawf("x");
+
+                resetColor();
+                drawf(") to win");
+
+                break;
+
+            case 4:
+                setCursorPos(5, 8);
+                drawf("One-way doors (");
+
+                setColor(CL_COLOR_BLUE, CL_COLOR_NO_COLOR);
+                drawf("< ^ > v");
+
+                resetColor();
+                drawf(") can only be entered from the opened side");
+
+                break;
+
+            case 5:
+                if(screen == GAME_OVER) {
+                    setCursorPos(12, 8);
+                    drawf("Press ");
+
+                    setColor(CL_COLOR_RED, CL_COLOR_NO_COLOR);
+                    drawf("ESC");
+
+                    resetColor();
+                    drawf(" to go back to the level selection screen");
+                }else {
+                    setCursorPos(8, 8);
+                    drawf("Boxes (");
+
+                    setColor(CL_COLOR_LIGHT_CYAN, CL_COLOR_NO_COLOR);
+                    drawf("@");
+
+                    resetColor();
+                    drawf(") can not be moved through one-way doors (");
+
+                    setColor(CL_COLOR_BLUE, CL_COLOR_NO_COLOR);
+                    drawf("< ^ > v");
+
+                    resetColor();
+                    drawf(")");
+                }
+
+                break;
+        }
+    }else if(currentMapIndex == 2) { //Built-in special pack
+        resetColor();
+        switch(level) {
+            case 0:
+                setCursorPos(18, 8);
+                drawf("Keys (");
+
+                setColor(CL_COLOR_LIGHT_CYAN, CL_COLOR_NO_COLOR);
+                drawf("*");
+
+                resetColor();
+                drawf(") can be used to open doors (");
+
+                setColor(CL_COLOR_RED, CL_COLOR_NO_COLOR);
+                drawf("=");
+
+                resetColor();
+                drawf(")");
+
+                break;
+            case 1:
+                setCursorPos(19, 8);
+                drawf("Every key (");
+
+                setColor(CL_COLOR_LIGHT_CYAN, CL_COLOR_NO_COLOR);
+                drawf("*");
+
+                resetColor();
+                drawf(") can open any door (");
+
+                setColor(CL_COLOR_RED, CL_COLOR_NO_COLOR);
+                drawf("=");
+
+                resetColor();
+                drawf(")");
+
+                break;
+
+            case 2:
+                setCursorPos(21, 8);
+                drawf("Keys (");
+
+                setColor(CL_COLOR_LIGHT_PINK, CL_COLOR_NO_COLOR);
+                drawf("*");
+
+                resetColor();
+                drawf(") might be in a goal (");
+
+                setColor(CL_COLOR_RED, CL_COLOR_NO_COLOR);
+                drawf("x");
+
+                resetColor();
+                drawf(")");
+
+                break;
+        }
     }
 
     //Exit
