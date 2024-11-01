@@ -225,8 +225,19 @@ void updateKey(int key) {
                 //Exit game
                 exit(EXIT_SUCCESS);
             }else {
-                //Reset game (to start menu)
-                initVars();
+                //Go to level selection
+                screen = SELECT_LEVEL;
+
+                escCheck = 0;
+                continueFlag = 0;
+
+                readLevelData();
+
+                //Set new draw function
+                drawOld = drawSelectLevelPack;
+                draw = drawSelectLevel;
+
+                updateLevelPackStats(currentMapIndex);
             }
         }else if(key == 'n') {
             escCheck = 0;
@@ -725,7 +736,13 @@ int moveBoxOrKey(int posX, int posY, int moveX, int moveY) {
 
 void drawField(void) {
     resetColor();
-    drawf("Level: %02d", level + 1);
+    drawf("Level: ");
+    if(level + 1 < 100) {
+        drawf("%02d", level + 1);
+    }else {
+        drawf("%c", 'A' + (level + 1 - 100) / 10);
+        drawf("%d", (level + 1) % 10);
+    }
 
     setCursorPos((int)((gameMinWidth - 11) * .25), 0);
     drawf("Moves: %04d", moves);
@@ -754,25 +771,25 @@ void drawField(void) {
     //Exit
     if(escCheck) {
         setColor(CL_COLOR_BLACK, CL_COLOR_YELLOW);
-        setCursorPos(27, 10);
-        drawf("Back to start menu?");
-        setCursorPos(27, 11);
-        drawf("-------------------");
-        setCursorPos(27, 12);
-        drawf("                   ");
-        setCursorPos(27, 13);
-        drawf("[y]es          [n]o");
+        setCursorPos(25, 10);
+        drawf("Back to level selection?");
+        setCursorPos(25, 11);
+        drawf("------------------------");
+        setCursorPos(25, 12);
+        drawf("                        ");
+        setCursorPos(25, 13);
+        drawf("[y]es               [n]o");
 
         //Draw border
         setColor(CL_COLOR_LIGHT_BLACK, CL_COLOR_RED);
-        setCursorPos(26, 9);
-        drawf("                     ");
-        setCursorPos(26, 14);
-        drawf("                     ");
+        setCursorPos(24, 9);
+        drawf("                          ");
+        setCursorPos(24, 14);
+        drawf("                          ");
         for(int i = 10;i < 14;i++) {
-            setCursorPos(26, i);
+            setCursorPos(24, i);
             drawf(" ");
-            setCursorPos(46, i);
+            setCursorPos(49, i);
             drawf(" ");
         }
     }
@@ -852,14 +869,14 @@ void drawSelectLevelPack(void) {
     setCursorPos(1, y + 1);
     drawf("Selected level pack:         %02d", currentMapIndex + 1);
     setCursorPos(1, y + 2);
-    drawf("Best time sum      : ");
+    drawf("Sum of best time   : ");
     if(levelPackBestTimeSum < 0) {
         drawf("X:XX:XX:XX");
     }else {
         drawf("%01d:%02d:%02d:%02d", levelPackBestTimeSum/86400, (levelPackBestTimeSum/3600)%24, (levelPackBestTimeSum/60)%60, levelPackBestTimeSum%60);
     }
     setCursorPos(1, y + 3);
-    drawf("Best moves sum     :     ");
+    drawf("Sum of best moves  :     ");
     if(levelPackBestMovesSum < 0) {
         drawf("XXXXXX");
     }else {
@@ -948,7 +965,7 @@ void drawSelectLevel(void) {
     setCursorPos(1, y + 1);
     drawf("Selected level:    ");
     if(selectedLevel + 1 < 100) {
-        drawf("%2d", selectedLevel + 1);
+        drawf("%02d", selectedLevel + 1);
     }else {
         drawf("%c", 'A' + (selectedLevel + 1 - 100) / 10);
         drawf("%d", (selectedLevel + 1) % 10);

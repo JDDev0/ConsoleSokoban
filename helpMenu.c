@@ -103,7 +103,7 @@ void drawHelp(void) {
             setColor(CL_COLOR_LIGHT_RED, CL_COLOR_NO_COLOR);
             drawf("ENTER");
             resetColor();
-            drawf(": Start game\n");
+            drawf(": Start game/Next Level\n");
 
             setColor(CL_COLOR_LIGHT_RED, CL_COLOR_NO_COLOR);
             drawf("ESC");
