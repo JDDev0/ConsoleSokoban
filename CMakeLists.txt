@@ -26,6 +26,7 @@ endfunction()
 
 include_map(tutorial)
 include_map(main)
+include_map(special)
 include_map(demon)
 
 add_executable(Sokoban

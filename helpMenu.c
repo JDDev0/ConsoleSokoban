@@ -277,32 +277,39 @@ void drawHelp(void) {
             drawf("3.3 Game screen\n");
 
             setUnderline(0);
-            setColor(CL_COLOR_PINK, CL_COLOR_NO_COLOR);
-            drawf("Game field:");
 
             resetColor();
-            setCursorPos(1, 14);
-            drawf(": Empty\n       : One way doors\n : Wall\n : Player\n   : BOX\n "
-            ": Goal");
+            setCursorPos(1, 13);
+            drawf(": Empty\n       : One way doors\n : Wall\n : Player\n   : Box\n "
+            ": Goal\n   : Key\n : Locked Door");
 
             setColor(CL_COLOR_LIGHT_BLUE, CL_COLOR_NO_COLOR);
-            setCursorPos(0, 14);
+            setCursorPos(0, 13);
             drawf("-\n< ^ > v");
             setColor(CL_COLOR_LIGHT_GREEN, CL_COLOR_NO_COLOR);
-            setCursorPos(0, 16);
+            setCursorPos(0, 15);
             drawf("#");
             setColor(CL_COLOR_YELLOW, CL_COLOR_NO_COLOR);
-            setCursorPos(0, 17);
+            setCursorPos(0, 16);
             drawf("P");
             setColor(CL_COLOR_LIGHT_CYAN, CL_COLOR_NO_COLOR);
-            setCursorPos(0, 18);
+            setCursorPos(0, 17);
             drawf("@");
             setColor(CL_COLOR_PINK, CL_COLOR_NO_COLOR);
-            setCursorPos(2, 18);
+            setCursorPos(2, 17);
             drawf("@");
             setColor(CL_COLOR_LIGHT_RED, CL_COLOR_NO_COLOR);
-            setCursorPos(0, 19);
+            setCursorPos(0, 18);
             drawf("x");
+            setColor(CL_COLOR_LIGHT_CYAN, CL_COLOR_NO_COLOR);
+            setCursorPos(0, 19);
+            drawf("*");
+            setColor(CL_COLOR_PINK, CL_COLOR_NO_COLOR);
+            setCursorPos(2, 19);
+            drawf("*");
+            setColor(CL_COLOR_LIGHT_RED, CL_COLOR_NO_COLOR);
+            setCursorPos(0, 20);
+            drawf("=");
 
             break;
         case 5:

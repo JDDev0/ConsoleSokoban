@@ -45,6 +45,15 @@ char getCharFromField(struct field *field, int x, int y, int isPlayerBackground)
             else
                 setColor(CL_COLOR_YELLOW, CL_COLOR_NO_COLOR);
             return 'P';
+        case KEY:
+            setColor(CL_COLOR_LIGHT_CYAN, CL_COLOR_NO_COLOR);
+            return '*';
+        case KEY_IN_GOAL:
+            setColor(CL_COLOR_PINK, CL_COLOR_NO_COLOR);
+            return '*';
+        case LOCKED_DOOR:
+            setColor(CL_COLOR_LIGHT_RED, CL_COLOR_NO_COLOR);
+            return '=';
         case BOX:
             setColor(CL_COLOR_LIGHT_CYAN, CL_COLOR_NO_COLOR);
             return '@';

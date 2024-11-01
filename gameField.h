@@ -3,7 +3,7 @@
 
     enum fieldIDs {
         EMPTY, ONE_WAY_LEFT, ONE_WAY_UP, ONE_WAY_RIGHT, ONE_WAY_DOWN, WALL, PLAYER,
-        BOX, GOAL, BOX_IN_GOAL
+        KEY, KEY_IN_GOAL, LOCKED_DOOR, BOX, GOAL, BOX_IN_GOAL
     };
 
     struct field {

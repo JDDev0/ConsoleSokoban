@@ -3,7 +3,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
-#include <sys/stat.h>
 
 #include "consoleLib.h"
 #include "consoleMenu.h"
@@ -12,6 +11,7 @@
 
 #include "map_tutorial.h"
 #include "map_main.h"
+#include "map_special.h"
 #include "map_demon.h"
 
 #define VERSION "1.2.0"
@@ -24,7 +24,7 @@ void update(void);
 void updateKey(int);
 void updateMouse(void);
 
-int moveBox(int posX, int posY, int moveX, int moveY);
+int moveBoxOrKey(int posX, int posY, int moveX, int moveY);
 
 void drawField(void);
 void drawSelectLevelPack(void);
@@ -126,6 +126,7 @@ int main(int argc, char *argv[]) {
 
     memcpy(pathMapData[i++], tutorial_map_id, min((int)strlen(tutorial_map_id) + 1, 512));
     memcpy(pathMapData[i++], main_map_id, min((int)strlen(main_map_id) + 1, 512));
+    memcpy(pathMapData[i++], special_map_id, min((int)strlen(special_map_id) + 1, 512));
     memcpy(pathMapData[i++], demon_map_id, min((int)strlen(demon_map_id) + 1, 512));
 
     for(int j = 1;j < argc && i < MAX_LEVEL_PACK_COUNT;j++) //Additional level packs
@@ -461,9 +462,9 @@ void updateKey(int key) {
 
                     //Set players old position to old level data
                     enum fieldIDs tmp = levels[level].field[playerPosX][playerPosY];
-                    if(tmp == PLAYER || tmp == BOX)
+                    if(tmp == PLAYER || tmp == BOX || tmp == KEY || tmp == LOCKED_DOOR)
                         tmp = EMPTY;
-                    if(tmp == BOX_IN_GOAL)
+                    else if(tmp == BOX_IN_GOAL || tmp == KEY_IN_GOAL)
                         tmp = GOAL;
                     levelNow.field[playerPosX][playerPosY] = tmp;
 
@@ -480,7 +481,9 @@ void updateKey(int key) {
                                     break;
                                 case BOX:
                                 case BOX_IN_GOAL:
-                                    if(moveBox(playerPosX - 1, playerPosY, -1, 0))
+                                case KEY:
+                                case KEY_IN_GOAL:
+                                    if(moveBoxOrKey(playerPosX - 1, playerPosY, -1, 0))
                                         playerPosX--;
                                     break;
                                 default:
@@ -497,7 +500,9 @@ void updateKey(int key) {
                                     break;
                                 case BOX:
                                 case BOX_IN_GOAL:
-                                    if(moveBox(playerPosX, playerPosY - 1, 0, -1))
+                                case KEY:
+                                case KEY_IN_GOAL:
+                                    if(moveBoxOrKey(playerPosX, playerPosY - 1, 0, -1))
                                         playerPosY--;
                                     break;
                                 default:
@@ -514,7 +519,9 @@ void updateKey(int key) {
                                     break;
                                 case BOX:
                                 case BOX_IN_GOAL:
-                                    if(moveBox(playerPosX + 1, playerPosY, 1, 0))
+                                case KEY:
+                                case KEY_IN_GOAL:
+                                    if(moveBoxOrKey(playerPosX + 1, playerPosY, 1, 0))
                                         playerPosX++;
                                     break;
                                 default:
@@ -531,7 +538,9 @@ void updateKey(int key) {
                                     break;
                                 case BOX:
                                 case BOX_IN_GOAL:
-                                    if(moveBox(playerPosX, playerPosY + 1, 0, 1))
+                                case KEY:
+                                case KEY_IN_GOAL:
+                                    if(moveBoxOrKey(playerPosX, playerPosY + 1, 0, 1))
                                         playerPosY++;
                                     break;
                                 default:
@@ -656,11 +665,14 @@ void updateMouse(void) {
     }
 }
 
-int moveBox(int posX, int posY, int moveX, int moveY) {
+int moveBoxOrKey(int posX, int posY, int moveX, int moveY) {
     enum fieldIDs *tmpIDOld = &levelNow.field[posX][posY];
     enum fieldIDs *tmpIDNew = &levelNow.field[posX + moveX][posY + moveY];
-    if(*tmpIDNew == EMPTY || *tmpIDNew == GOAL) {
-        if(*tmpIDNew == GOAL) {
+
+    int isBox = *tmpIDOld == BOX || *tmpIDOld == BOX_IN_GOAL;
+
+    if(*tmpIDNew == EMPTY || *tmpIDNew == GOAL || (!isBox && *tmpIDNew == LOCKED_DOOR)) {
+        if(isBox && *tmpIDNew == GOAL) {
             *tmpIDNew = BOX_IN_GOAL;
 
             continueFlag = 1;
@@ -668,17 +680,16 @@ int moveBox(int posX, int posY, int moveX, int moveY) {
             int breakFlag = 0;
             for(int i = 0;i < levelNow.width;i++) {
                 for(int j = 0;j < levelNow.height;j++) {
-                    if(levelNow.field[i][j] == GOAL) {
+                    if(levelNow.field[i][j] == GOAL || levelNow.field[i][j] == KEY_IN_GOAL) {
                         continueFlag = 0;
                         continueLevelAddFlag = 0;
 
+                        breakFlag = 1;
                         break;
                     }
 
                     //Is player at GOAL -> check level field
-                    if(i == posX && j == posY && (levels[level].
-                    field[i][j] == GOAL || levels[level].
-                    field[i][j] == BOX_IN_GOAL)) {
+                    if(i == posX && j == posY && levels[level].field[i][j] == GOAL) {
                         continueFlag = 0;
                         continueLevelAddFlag = 0;
 
@@ -690,11 +701,18 @@ int moveBox(int posX, int posY, int moveX, int moveY) {
                 if(breakFlag)
                     break;
             }
-        }else {
+        }else if(!isBox && *tmpIDNew == GOAL) {
+            *tmpIDNew = KEY_IN_GOAL;
+        }else if(isBox) {
             *tmpIDNew = BOX;
+        }else if(*tmpIDNew == LOCKED_DOOR) {
+            //Open door and destroy key
+            *tmpIDNew = EMPTY;
+        }else {
+            *tmpIDNew = KEY;
         }
 
-        if(*tmpIDOld == BOX)
+        if(*tmpIDOld == BOX || *tmpIDOld == KEY)
             *tmpIDOld = EMPTY;
         else
             *tmpIDOld = GOAL;
@@ -1108,6 +1126,11 @@ void readLevelData(void) {
             memcpy(mapData, main_map_data, strlen(main_map_data) + 1);
 
             strcat(pathMapSaveData, "main.lvl.sav");
+        }else if(strlen(special_map_id) <= strlen(pathMapData[currentMapIndex]) &&
+            memcmp(special_map_id, pathMapData[currentMapIndex], strlen(special_map_id)) == 0) {
+            memcpy(mapData, special_map_data, strlen(special_map_data) + 1);
+
+            strcat(pathMapSaveData, "special.lvl.sav");
         }else if(strlen(demon_map_id) <= strlen(pathMapData[currentMapIndex]) &&
             memcmp(demon_map_id, pathMapData[currentMapIndex], strlen(demon_map_id)) == 0) {
             memcpy(mapData, demon_map_data, strlen(demon_map_data) + 1);
@@ -1222,6 +1245,15 @@ void readLevelData(void) {
                     case 'P':
                         levels[i].field[j][k] = PLAYER;
                         break;
+                    case '*':
+                        levels[i].field[j][k] = KEY;
+                        break;
+                    case '~':
+                        levels[i].field[j][k] = KEY_IN_GOAL;
+                        break;
+                    case '=':
+                        levels[i].field[j][k] = LOCKED_DOOR;
+                        break;
                     case '@':
                         levels[i].field[j][k] = BOX;
                         break;
@@ -1280,6 +1312,11 @@ void updateLevelPackStats(int levelPackIndex) {
             sscanf(main_map_data, "Levels: %d\n\n", &levelCountTmp);
 
             strcat(pathMapSaveData, "main.lvl.sav");
+        }else if(strlen(special_map_id) <= strlen(pathMapData[levelPackIndex]) &&
+            memcmp(special_map_id, pathMapData[levelPackIndex], strlen(special_map_id)) == 0) {
+            sscanf(special_map_data, "Levels: %d\n\n", &levelCountTmp);
+
+            strcat(pathMapSaveData, "special.lvl.sav");
         }else if(strlen(demon_map_id) <= strlen(pathMapData[levelPackIndex]) &&
             memcmp(demon_map_id, pathMapData[levelPackIndex], strlen(demon_map_id)) == 0) {
             sscanf(demon_map_data, "Levels: %d\n\n", &levelCountTmp);
