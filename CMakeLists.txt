@@ -13,11 +13,11 @@ function(include_map map_name)
 
     string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1, " content "${content}")
 
-    string(REGEX REPLACE ", $" "" content "${content}")
+    string(REGEX REPLACE ", \n" ",\n" content "${content}")
 
     STRING(TOUPPER "MAP_${map_name}_H" include_guard)
 
-    set(array_definition "#ifndef ${include_guard}\n#define ${include_guard}\nstatic const char ${map_name}_map_id[] = \"build-in:${map_name}\";\nstatic const char ${map_name}_map_data[] = {\n${content}\n};\n#endif\n")
+    set(array_definition "#ifndef ${include_guard}\n#define ${include_guard}\nstatic const char ${map_name}_map_id[] = \"build-in:${map_name}\";\nstatic const char ${map_name}_map_data[] = {\n${content}0x00\n};\n#endif\n")
 
     set(source "//Auto generated file (DO NOT EDIT)\n${array_definition}\n")
 
