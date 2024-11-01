@@ -161,7 +161,7 @@
         strcpy(dest, getenv("HOME"));
         strcat(dest, "/.jddev0");
         makeDirectory(dest);
-        strcat(dest, "/ConsoleSokoban");
+        strcat(dest, "/" CONFIG_PATH_FOLDER);
         makeDirectory(dest);
         strcat(dest, "/");
     }
@@ -407,7 +407,7 @@
         strcat(dest, getenv("HOMEPATH"));
         strcat(dest, "/.jddev0");
         makeDirectory(dest);
-        strcat(dest, "/ConsoleSokoban");
+        strcat(dest, "/" CONFIG_PATH_FOLDER);
         makeDirectory(dest);
         strcat(dest, "/");
     }
