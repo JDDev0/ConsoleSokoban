@@ -231,13 +231,13 @@ void updateKey(int key) {
                 escCheck = 0;
                 continueFlag = 0;
 
+                updateLevelPackStats(currentMapIndex);
+
                 readLevelData();
 
                 //Set new draw function
                 drawOld = drawSelectLevelPack;
                 draw = drawSelectLevel;
-
-                updateLevelPackStats(currentMapIndex);
             }
         }else if(key == 'n') {
             escCheck = 0;
