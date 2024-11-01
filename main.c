@@ -46,8 +46,9 @@ long min_l(long, long);
 static void (*draw)(void);
 static void (*drawOld)(void);
 
-//Maps
+//Maps & Levels
 #define MAX_LEVEL_PACK_COUNT 64
+#define MAX_LEVEL_COUNT_PER_PACK 192
 
 const char build_in_map_prefix[] = "build-in:";
 
@@ -88,8 +89,8 @@ static struct field levelNowTmpStep;
 static int levelCount = 0;
 static struct field *levels;
 
-static int levelBestTime[99];
-static int levelBestMoves[99];
+static int levelBestTime[MAX_LEVEL_COUNT_PER_PACK];
+static int levelBestMoves[MAX_LEVEL_COUNT_PER_PACK];
 
 static int levelPackAllLevelsBeaten[MAX_LEVEL_PACK_COUNT] = {0};
 static int levelPackBestTimeSum = -1;
@@ -882,7 +883,13 @@ void drawSelectLevel(void) {
         setColor(CL_COLOR_BLACK, (i < minLevelNotCompleted)?CL_COLOR_GREEN:(
         (i == minLevelNotCompleted)?CL_COLOR_YELLOW:CL_COLOR_RED));
         setCursorPos(x, y);
-        drawf("%2d", i + 1);
+
+        if(i + 1 < 100) {
+            drawf("%2d", i + 1);
+        }else {
+            drawf("%c", 'A' + (i + 1 - 100) / 10);
+            drawf("%d", (i + 1) % 10);
+        }
 
         resetColor();
         drawf("|");
@@ -906,7 +913,7 @@ void drawSelectLevel(void) {
     drawf("----");
 
     //Draw border for best time and best moves
-    y = 4 + (levelCount/24)*2;
+    y = 4 + ((levelCount - 1)/24)*2;
 
     setCursorPos(0, y);
     setColor(CL_COLOR_CYAN, CL_COLOR_NO_COLOR);
@@ -921,7 +928,13 @@ void drawSelectLevel(void) {
     //Draw best time and best moves
     resetColor();
     setCursorPos(1, y + 1);
-    drawf("Selected level:    %02d", selectedLevel + 1);
+    drawf("Selected level:    ");
+    if(selectedLevel + 1 < 100) {
+        drawf("%2d", selectedLevel + 1);
+    }else {
+        drawf("%c", 'A' + (selectedLevel + 1 - 100) / 10);
+        drawf("%d", (selectedLevel + 1) % 10);
+    }
     setCursorPos(1, y + 2);
     drawf("Best time     : ");
     if(levelBestTime[selectedLevel] < 0) {
@@ -1130,9 +1143,9 @@ void readLevelData(void) {
 
     sscanf(mapData + mapDataByteOffset, "Levels: %d\n\n%n", &levelCount, &bytesRead);
     mapDataByteOffset += bytesRead;
-    if(levelCount > 99) {
+    if(levelCount > MAX_LEVEL_COUNT_PER_PACK) {
         reset();
-        printf("To many levels (Max: 99) (In file: %d)!\n", levelCount);
+        printf("To many levels (Max: %d) (In file: %d)!\n", MAX_LEVEL_COUNT_PER_PACK, levelCount);
 
         exit(EXIT_FAILURE);
     }
@@ -1155,10 +1168,12 @@ void readLevelData(void) {
     if(minLevelNotCompleted > levelCount) //If mLNC == lC -> all levels completed
         minLevelNotCompleted = 0;
 
-    for(int i = 0;i < 99;i++) {
+    for(int i = 0;i < MAX_LEVEL_COUNT_PER_PACK;i++) {
         levelBestTime[i] = -1;
         levelBestMoves[i] = -1;
-        fscanf(mapSave, "%d,%d\n", levelBestTime + i, levelBestMoves + i);
+
+        if(i < minLevelNotCompleted)
+            fscanf(mapSave, "%d,%d\n", levelBestTime + i, levelBestMoves + i);
     }
 
     levels = malloc((size_t)levelCount * sizeof(struct field));
@@ -1228,7 +1243,7 @@ void saveLevelData(void) {
 
         fprintf(mapSave, "%d\n", minLevelNotCompleted);
 
-        for(int i = 0;i < 99;i++)
+        for(int i = 0;i < minLevelNotCompleted;i++)
             fprintf(mapSave, "%d,%d\n", levelBestTime[i], levelBestMoves[i]);
 
         fflush(mapSave);
@@ -1247,45 +1262,45 @@ void updateLevelPackStats(int levelPackIndex) {
     levelPackBestTimeSum = -1;
     levelPackBestMovesSum = -1;
 
-    int levelCountTmp = 100;
+    int levelCountTmp = MAX_LEVEL_COUNT_PER_PACK + 1;
 
     getConfigPathPrefix(pathMapSaveData);
 
-    if(strlen(build_in_map_prefix) <= strlen(pathMapData[currentMapIndex]) &&
-        memcmp(build_in_map_prefix, pathMapData[currentMapIndex], strlen(build_in_map_prefix)) == 0) {
+    if(strlen(build_in_map_prefix) <= strlen(pathMapData[levelPackIndex]) &&
+        memcmp(build_in_map_prefix, pathMapData[levelPackIndex], strlen(build_in_map_prefix)) == 0) {
         //build-in map
 
-        if(strlen(tutorial_map_id) <= strlen(pathMapData[currentMapIndex]) &&
-            memcmp(tutorial_map_id, pathMapData[currentMapIndex], strlen(tutorial_map_id)) == 0) {
+        if(strlen(tutorial_map_id) <= strlen(pathMapData[levelPackIndex]) &&
+            memcmp(tutorial_map_id, pathMapData[levelPackIndex], strlen(tutorial_map_id)) == 0) {
             sscanf(tutorial_map_data, "Levels: %d\n\n", &levelCountTmp);
 
             strcat(pathMapSaveData, "tutorial.lvl.sav");
-        }else if(strlen(main_map_id) <= strlen(pathMapData[currentMapIndex]) &&
-            memcmp(main_map_id, pathMapData[currentMapIndex], strlen(main_map_id)) == 0) {
+        }else if(strlen(main_map_id) <= strlen(pathMapData[levelPackIndex]) &&
+            memcmp(main_map_id, pathMapData[levelPackIndex], strlen(main_map_id)) == 0) {
             sscanf(main_map_data, "Levels: %d\n\n", &levelCountTmp);
 
             strcat(pathMapSaveData, "main.lvl.sav");
-        }else if(strlen(demon_map_id) <= strlen(pathMapData[currentMapIndex]) &&
-            memcmp(demon_map_id, pathMapData[currentMapIndex], strlen(demon_map_id)) == 0) {
+        }else if(strlen(demon_map_id) <= strlen(pathMapData[levelPackIndex]) &&
+            memcmp(demon_map_id, pathMapData[levelPackIndex], strlen(demon_map_id)) == 0) {
             sscanf(demon_map_data, "Levels: %d\n\n", &levelCountTmp);
 
             strcat(pathMapSaveData, "demon.lvl.sav");
         }else {
             reset();
-            printf("Can't read build-in map data file \"%s\"!\n", pathMapData[currentMapIndex]);
+            printf("Can't read build-in map data file \"%s\"!\n", pathMapData[levelPackIndex]);
 
             exit(EXIT_FAILURE);
         }
     }else {
-        FILE *map = fopen(pathMapData[currentMapIndex], "r");
+        FILE *map = fopen(pathMapData[levelPackIndex], "r");
         if(map == NULL) {
             reset();
-            printf("Can't read map data file \"%s\"!\n", pathMapData[currentMapIndex]);
+            printf("Can't read map data file \"%s\"!\n", pathMapData[levelPackIndex]);
 
             exit(EXIT_FAILURE);
         }
 
-        strcat(pathMapSaveData, pathMapData[currentMapIndex]);
+        strcat(pathMapSaveData, pathMapData[levelPackIndex]);
         strcat(pathMapSaveData, ".sav");
 
         fscanf(map, "Levels: %d\n\n", &levelCountTmp);
@@ -1294,7 +1309,7 @@ void updateLevelPackStats(int levelPackIndex) {
         map = NULL;
     }
 
-    if(levelCountTmp > 99)
+    if(levelCountTmp > MAX_LEVEL_COUNT_PER_PACK)
         return;
 
     mapSave = fopen(pathMapSaveData, "r+");
@@ -1316,7 +1331,8 @@ void updateLevelPackStats(int levelPackIndex) {
         int bestTimeTmp = -1;
         int bestMovesTmp = -1;
 
-        fscanf(mapSave, "%d,%d\n", &bestTimeTmp, &bestMovesTmp);
+        if(i < minLevelNotCompletedTmp)
+            fscanf(mapSave, "%d,%d\n", &bestTimeTmp, &bestMovesTmp);
 
         if(levelPackBestTimeSum >= 0)
             levelPackBestTimeSum = bestTimeTmp < 0?-1:(levelPackBestTimeSum + bestTimeTmp);
