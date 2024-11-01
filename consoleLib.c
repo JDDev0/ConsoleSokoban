@@ -50,6 +50,9 @@
 
         //Init drawBuf
         drawBuf = malloc(sizeof(char)*(size_t)(columns * rows));
+
+        //Force clear screen after init
+        clear();
     }
     void reset(void) {
         clrscr();
@@ -91,6 +94,13 @@
 
         if(ch == KEY_MOUSE) {
             ungetch(ch);
+
+            return ERR;
+        }
+
+        //Force redraw on resize
+        if(ch == KEY_RESIZE) {
+            clear();
 
             return ERR;
         }
