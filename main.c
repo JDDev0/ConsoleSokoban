@@ -736,6 +736,9 @@ int moveBoxOrKey(int posX, int posY, int moveX, int moveY) {
 
 void drawField(void) {
     resetColor();
+    drawf("Pack: %02d", currentMapIndex + 1);
+
+    setCursorPos((int)((gameMinWidth - 9) * .25), 0);
     drawf("Level: ");
     if(level + 1 < 100) {
         drawf("%02d", level + 1);
@@ -744,7 +747,7 @@ void drawField(void) {
         drawf("%d", (level + 1) % 10);
     }
 
-    setCursorPos((int)((gameMinWidth - 11) * .25), 0);
+    setCursorPos((int)((gameMinWidth - 11) * .75), 0);
     drawf("Moves: %04d", moves);
 
     setCursorPos(gameMinWidth - 11, 0);
