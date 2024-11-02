@@ -1088,11 +1088,11 @@ void drawSelectLevelPack(void) {
             (levelPackBestTimeSum/60000)%60, (levelPackBestTimeSum/1000)%60, levelPackBestTimeSum%1000);
     }
     setCursorPos(1, y + 3);
-    drawf("Sum of best moves  :         ");
+    drawf("Sum of best moves  :        ");
     if(levelPackBestMovesSum < 0) {
-        drawf("XXXXXX");
+        drawf("XXXXXXX");
     }else {
-        drawf("%06d", levelPackBestMovesSum);
+        drawf("%07d", levelPackBestMovesSum);
     }
 }
 void drawSelectLevel(void) {
