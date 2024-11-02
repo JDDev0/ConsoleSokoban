@@ -728,7 +728,8 @@ int moveBoxOrKey(int posX, int posY, int moveX, int moveY) {
                     }
 
                     //Is player at GOAL -> check level field
-                    if(i == posX && j == posY && levels[level].field[i][j] == GOAL) {
+                    if(i == posX && j == posY && (levels[level].field[i][j] == GOAL ||
+                        levels[level].field[i][j] == BOX_IN_GOAL || levels[level].field[i][j] == KEY_IN_GOAL)) {
                         continueFlag = 0;
                         continueLevelAddFlag = 0;
 
