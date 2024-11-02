@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <sys/time.h>
 
 #include "consoleLib.h"
 #include "consoleMenu.h"
@@ -42,6 +43,8 @@ void updateLevelPackStats(int levelPackIndex);
 int min(int, int);
 long min_l(long, long);
 
+size_t timediff_milisec(struct timeval, struct timeval);
+
 //Set funcPtr to drawField after START_MENU
 static void (*draw)(void);
 static void (*drawOld)(void);
@@ -73,10 +76,13 @@ static int playerBackgroundTmp = 0;
 //Level
 static int moves = 0;
 static int oldMoves = 0;
-static time_t timeStartInMenu = -1;
-static time_t timeStart = -1;
-static time_t timeSec = 0;
-static time_t timeMin = 0;
+static int hasTimeStartInMenu = 0;
+static struct timeval timeStartInMenu;
+static int hasTimeStart = 0;
+static struct timeval timeStart;
+static size_t timeMilliSec = 0;
+static size_t timeSec = 0;
+static size_t timeMin = 0;
 static int playerPosX;
 static int playerPosY;
 static int playerPosXOld;
@@ -89,11 +95,11 @@ static struct field levelNowTmpStep;
 static int levelCount = 0;
 static struct field *levels;
 
-static int levelBestTime[MAX_LEVEL_COUNT_PER_PACK];
+static long levelBestTime[MAX_LEVEL_COUNT_PER_PACK];
 static int levelBestMoves[MAX_LEVEL_COUNT_PER_PACK];
 
 static int levelPackAllLevelsBeaten[MAX_LEVEL_PACK_COUNT] = {0};
-static int levelPackBestTimeSum = -1;
+static long levelPackBestTimeSum = -1;
 static int levelPackBestMovesSum = -1;
 
 static const int gameMinWidth = 74;
@@ -177,19 +183,22 @@ void update(void) {
     updateMouse();
 
     //Time
-    if(screen == IN_GAME && !continueFlag) {
-        if(timeStart < 0) {
-            timeSec = 0;
-            timeMin = 0;
-        }else {
-            time_t timeNow = time(NULL);
+    if(screen == IN_GAME && !continueFlag && !hasTimeStartInMenu) {
+        if(hasTimeStart) {
+            struct timeval timeNow;
+            gettimeofday(&timeNow, NULL);
 
-            timeSec = (time_t)(difftime(timeNow, timeStart));
-            if(timeStartInMenu > -1)
-                timeSec -= (time_t)(difftime(timeNow, timeStartInMenu));
+            timeMilliSec = timediff_milisec(timeNow, timeStart);
+
+            timeSec = timeMilliSec/1000;
+            timeMilliSec %= 1000;
 
             timeMin = timeSec/60;
             timeSec %= 60;
+        }else {
+            timeMilliSec = 0;
+            timeSec = 0;
+            timeMin = 0;
         }
     }
 
@@ -211,10 +220,15 @@ void updateKey(int key) {
         isHelp = 0;
         draw = drawOld;
 
-        if(timeStartInMenu > -1 && timeStart > -1)
-            timeStart += (time_t)(difftime(time(NULL), timeStartInMenu));
+        if(hasTimeStartInMenu && hasTimeStart) {
+            struct timeval timeNow;
+            gettimeofday(&timeNow, NULL);
 
-        timeStartInMenu = -1;
+            timeStart.tv_sec += timeNow.tv_sec - timeStartInMenu.tv_sec;
+            timeStart.tv_usec += timeNow.tv_usec - timeStartInMenu.tv_usec;
+        }
+
+        hasTimeStartInMenu = 0;
 
         return;
     }
@@ -242,10 +256,15 @@ void updateKey(int key) {
         }else if(key == 'n') {
             escCheck = 0;
 
-            if(timeStartInMenu > -1 && timeStart > -1)
-                timeStart += (time_t)(difftime(time(NULL), timeStartInMenu));
+            if(hasTimeStartInMenu && hasTimeStart) {
+                struct timeval timeNow;
+                gettimeofday(&timeNow, NULL);
 
-            timeStartInMenu = -1;
+                timeStart.tv_sec += timeNow.tv_sec - timeStartInMenu.tv_sec;
+                timeStart.tv_usec += timeNow.tv_usec - timeStartInMenu.tv_usec;
+            }
+
+            hasTimeStartInMenu = 0;
         }
     }else {
         //Help
@@ -255,14 +274,20 @@ void updateKey(int key) {
                 drawOld = draw;
                 draw = drawHelp;
 
-                timeStartInMenu = time(NULL);
+                gettimeofday(&timeStartInMenu, NULL);
+                hasTimeStartInMenu = 1;
             }else {
                 draw = drawOld;
 
-                if(timeStartInMenu >-1 && timeStart > -1)
-                    timeStart += (time_t)(difftime(time(NULL), timeStartInMenu));
+                if(hasTimeStartInMenu && hasTimeStart) {
+                    struct timeval timeNow;
+                    gettimeofday(&timeNow, NULL);
 
-                timeStartInMenu = -1;
+                    timeStart.tv_sec += timeNow.tv_sec - timeStartInMenu.tv_sec;
+                    timeStart.tv_usec += timeNow.tv_usec - timeStartInMenu.tv_usec;
+                }
+
+                hasTimeStartInMenu = 0;
             }
 
             return;
@@ -400,7 +425,7 @@ void updateKey(int key) {
                             minLevelNotCompleted = level+1;
 
                         //Update best scores
-                        int bestTime = (int)(timeSec + 60 * timeMin);
+                        long bestTime = (long)(timeMilliSec + 1000 * timeSec + 60000 * timeMin);
                         if(levelBestTime[level] == -1 || levelBestTime[level] > bestTime)
                             levelBestTime[level] = bestTime;
 
@@ -479,8 +504,10 @@ void updateKey(int key) {
                         tmp = GOAL;
                     levelNow.field[playerPosX][playerPosY] = tmp;
 
-                    if(timeStart < 0)
-                        timeStart = time(NULL);
+                    if(!hasTimeStart) {
+                        gettimeofday(&timeStart, NULL);
+                        hasTimeStart = 1;
+                    }
 
                     switch(key) {
                         case CL_KEY_LEFT:
@@ -599,7 +626,8 @@ void updateKey(int key) {
             }else {
                 escCheck = 1;
 
-                timeStartInMenu = time(NULL);
+                gettimeofday(&timeStartInMenu, NULL);
+                hasTimeStartInMenu = 1;
             }
         }
     }
@@ -750,8 +778,8 @@ void drawField(void) {
     setCursorPos((int)((gameMinWidth - 11) * .75), 0);
     drawf("Moves: %04d", moves);
 
-    setCursorPos(gameMinWidth - 11, 0);
-    drawf("Time: %02d:%02d", timeMin, timeSec);
+    setCursorPos(gameMinWidth - 15, 0);
+    drawf("Time: %02d:%02d.%03d", timeMin, timeSec, timeMilliSec);
 
     if(continueFlag) {
         setCursorPos((int)((gameMinWidth - 16) * .5), 0);
@@ -1038,27 +1066,28 @@ void drawSelectLevelPack(void) {
 
     setCursorPos(0, y);
     setColor(CL_COLOR_CYAN, CL_COLOR_NO_COLOR);
-    drawf(".-------------------------------.");
+    drawf(".-----------------------------------.");
     for(int i = 1;i < 4;i++) {
         setCursorPos(0, y + i);
-        drawf("|                               |");
+        drawf("|                                   |");
     }
     setCursorPos(0, y + 4);
-    drawf("\'-------------------------------\'");
+    drawf("\'-----------------------------------\'");
 
     //Draw sum of best time and sum of best moves
     resetColor();
     setCursorPos(1, y + 1);
-    drawf("Selected level pack:         %02d", currentMapIndex + 1);
+    drawf("Selected level pack:             %02d", currentMapIndex + 1);
     setCursorPos(1, y + 2);
     drawf("Sum of best time   : ");
     if(levelPackBestTimeSum < 0) {
-        drawf("X:XX:XX:XX");
+        drawf("X:XX:XX:XX.XXX");
     }else {
-        drawf("%01d:%02d:%02d:%02d", levelPackBestTimeSum/86400, (levelPackBestTimeSum/3600)%24, (levelPackBestTimeSum/60)%60, levelPackBestTimeSum%60);
+        drawf("%01d:%02d:%02d:%02d.%03d", levelPackBestTimeSum/86400000, (levelPackBestTimeSum/3600000)%24,
+            (levelPackBestTimeSum/60000)%60, (levelPackBestTimeSum/1000)%60, levelPackBestTimeSum%1000);
     }
     setCursorPos(1, y + 3);
-    drawf("Sum of best moves  :     ");
+    drawf("Sum of best moves  :         ");
     if(levelPackBestMovesSum < 0) {
         drawf("XXXXXX");
     }else {
@@ -1134,18 +1163,18 @@ void drawSelectLevel(void) {
 
     setCursorPos(0, y);
     setColor(CL_COLOR_CYAN, CL_COLOR_NO_COLOR);
-    drawf(".---------------------.");
+    drawf(".-------------------------.");
     for(int i = 1;i < 4;i++) {
         setCursorPos(0, y + i);
-        drawf("|                     |");
+        drawf("|                         |");
     }
     setCursorPos(0, y + 4);
-    drawf("\'---------------------\'");
+    drawf("\'-------------------------\'");
 
     //Draw best time and best moves
     resetColor();
     setCursorPos(1, y + 1);
-    drawf("Selected level:    ");
+    drawf("Selected level:        ");
     if(selectedLevel + 1 < 100) {
         drawf("%02d", selectedLevel + 1);
     }else {
@@ -1155,12 +1184,12 @@ void drawSelectLevel(void) {
     setCursorPos(1, y + 2);
     drawf("Best time     : ");
     if(levelBestTime[selectedLevel] < 0) {
-        drawf("XX:XX");
+        drawf("XX:XX.XXX");
     }else {
-        drawf("%02d:%02d", levelBestTime[selectedLevel]/60, levelBestTime[selectedLevel]%60);
+        drawf("%02d:%02d.%03d", levelBestTime[selectedLevel]/60000, (levelBestTime[selectedLevel]%60000)/1000, levelBestTime[selectedLevel]%1000);
     }
     setCursorPos(1, y + 3);
-    drawf("Best moves    :  ");
+    drawf("Best moves    :      ");
     if(levelBestMoves[selectedLevel] < 0) {
         drawf("XXXX");
     }else {
@@ -1259,9 +1288,9 @@ void initVars(void) {
 
 void setLevel(int lvl) {
     moves = 0;
-    timeSec = timeMin = 0;
-    timeStart = -1;
-    timeStartInMenu = -1;
+    timeMilliSec = timeSec = timeMin = 0;
+    hasTimeStart = 0;
+    hasTimeStartInMenu = 0;
 
     level = lvl;
     removeField(&levelNow);
@@ -1394,8 +1423,16 @@ void readLevelData(void) {
         levelBestTime[i] = -1;
         levelBestMoves[i] = -1;
 
-        if(i < minLevelNotCompleted)
-            fscanf(mapSave, "%d,%d\n", levelBestTime + i, levelBestMoves + i);
+        if(i < minLevelNotCompleted) {
+            int hasNewTimeSaveFormat = fscanf(mapSave, "ms%ld,%d\n", levelBestTime + i, levelBestMoves + i);
+            if(!hasNewTimeSaveFormat) {
+            fscanf(mapSave, "%ld,%d\n", levelBestTime + i, levelBestMoves + i);
+
+                //Old format was saved in seconds (convert to ms)
+                levelBestTime[i] *= 1000;
+                levelBestTime[i] += 999;
+            }
+        }
     }
 
     levels = malloc((size_t)levelCount * sizeof(struct field));
@@ -1475,7 +1512,7 @@ void saveLevelData(void) {
         fprintf(mapSave, "%d\n", minLevelNotCompleted);
 
         for(int i = 0;i < minLevelNotCompleted;i++)
-            fprintf(mapSave, "%d,%d\n", levelBestTime[i], levelBestMoves[i]);
+            fprintf(mapSave, "ms%ld,%d\n", levelBestTime[i], levelBestMoves[i]);
 
         fflush(mapSave);
     }else {
@@ -1564,11 +1601,19 @@ void updateLevelPackStats(int levelPackIndex) {
     levelPackBestMovesSum = 0;
 
     for(int i = 0;i < levelCountTmp;i++) {
-        int bestTimeTmp = -1;
+        long bestTimeTmp = -1;
         int bestMovesTmp = -1;
 
-        if(i < minLevelNotCompletedTmp)
-            fscanf(mapSave, "%d,%d\n", &bestTimeTmp, &bestMovesTmp);
+        if(i < minLevelNotCompletedTmp) {
+            int hasNewTimeSaveFormat = fscanf(mapSave, "ms%ld,%d\n", &bestTimeTmp, &bestMovesTmp);
+            if(!hasNewTimeSaveFormat) {
+                fscanf(mapSave, "%ld,%d\n", &bestTimeTmp, &bestMovesTmp);
+
+                //Old format was saved in seconds (convert to ms)
+                bestTimeTmp *= 1000;
+                bestTimeTmp += 999;
+            }
+        }
 
         if(levelPackBestTimeSum >= 0)
             levelPackBestTimeSum = bestTimeTmp < 0?-1:(levelPackBestTimeSum + bestTimeTmp);
@@ -1586,4 +1631,8 @@ int min(int a, int b) {
 
 long min_l(long a, long b) {
     return a < b?a:b;
+}
+
+inline size_t timediff_milisec(struct timeval start, struct timeval end) {
+    return ((start.tv_sec - end.tv_sec) * 1000000 + start.tv_usec - end.tv_usec) / 1000;
 }
