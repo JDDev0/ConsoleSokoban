@@ -30,15 +30,19 @@ include_map(special)
 include_map(demon)
 
 add_executable(Sokoban
-    consoleLib.c
-    consoleLib.h
-    consoleMenu.c
-    consoleMenu.h
-    gameField.c
-    gameField.h
-    helpMenu.c
-    helpMenu.h
-    main.c)
+        consoleLib.c
+        consoleLib.h
+        consoleMenu.c
+        consoleMenu.h
+        gameField.c
+        gameField.h
+        helpMenu.c
+        helpMenu.h
+        game/game.c
+        game/game.h
+        game/level/level.c
+        game/level/level.h
+        main.c)
 
 if(UNIX)
     find_package(Curses REQUIRED)
