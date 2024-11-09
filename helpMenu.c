@@ -1,7 +1,7 @@
 #include "helpMenu.h"
-
 #include "consoleLib.h"
 #include "consoleMenu.h"
+#include "gameField.h"
 
 struct tableOfContents content;
 int helpPage;
