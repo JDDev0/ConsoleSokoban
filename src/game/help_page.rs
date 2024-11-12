@@ -9,9 +9,9 @@ enum SectionLayer {
 impl SectionLayer {
     pub fn get_heading_color(&self) -> Color {
         match self {
-            Self::Section(_) => Color::Blue,
-            Self::SubSection(_, _) => Color::Green,
-            Self::SubSubSection(_, _, _) => Color::Cyan,
+            Self::Section(..) => Color::Blue,
+            Self::SubSection(..) => Color::Green,
+            Self::SubSubSection(..) => Color::Cyan,
         }
     }
 }
