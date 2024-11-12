@@ -1188,7 +1188,7 @@ impl Screen for ScreenInGame {
             return;
         }
 
-        let diff = SystemTime::now().duration_since(mem::replace(&mut self.time_start_in_menu, None).unwrap()).
+        let diff = SystemTime::now().duration_since(self.time_start_in_menu.take().unwrap()).
                 expect("Time manipulation detected (Start time is in the future)!");
 
         self.time_start = self.time_start.map(|time_start| time_start + diff);

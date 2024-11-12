@@ -251,7 +251,7 @@ impl <'a> Game<'a> {
     }
 
     fn update_key(&mut self, key: i32) {
-        let screen = self.screens.get_mut(&mut self.game_state.current_screen_id);
+        let screen = self.screens.get_mut(&self.game_state.current_screen_id);
         if self.game_state.is_help {
             if key == keys::F1 || key == keys::ESC {
                 self.game_state.close_help_page();
