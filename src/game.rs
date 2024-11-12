@@ -216,17 +216,17 @@ impl <'a> Game<'a> {
 
     #[must_use]
     pub fn update(&self) -> bool {
-        let mut game_state = &mut *self.game_state.borrow_mut();
+        let game_state = &mut *self.game_state.borrow_mut();
 
         if game_state.should_exit {
             return true;
         }
 
         if self.console.has_input() {
-            self.update_key(&mut game_state, self.console.get_key());
+            self.update_key(game_state, self.console.get_key());
         }
 
-        self.update_mouse(&mut game_state);
+        self.update_mouse(game_state);
 
         if !game_state.is_help {
             let screen = self.screens.get(&game_state.current_screen_id);
