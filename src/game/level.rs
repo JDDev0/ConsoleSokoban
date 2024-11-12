@@ -26,6 +26,8 @@ pub enum Tile {
     Box,
     BoxInGoal,
     Goal,
+
+    Secret,
 }
 
 impl Tile {
@@ -49,6 +51,8 @@ impl Tile {
             b'@' => Ok(Tile::Box),
             b'+' => Ok(Tile::BoxInGoal),
             b'x' => Ok(Tile::Goal),
+
+            b's' => Ok(Tile::Secret),
 
             _ => Err(LevelLoadingError::new("Invalid tile")),
         }
@@ -111,6 +115,10 @@ impl Tile {
             Tile::Goal => {
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("x");
+            },
+            Tile::Secret => {
+                console.set_color(Color::LightBlue, Color::Default);
+                console.draw_text("+");
             },
         };
     }

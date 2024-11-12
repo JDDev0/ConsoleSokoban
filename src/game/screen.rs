@@ -636,6 +636,7 @@ pub struct ScreenInGame {
 
     continue_flag: bool,
     continue_level_add_flag: bool,
+    secret_found_flag: bool,
     game_over_flag: bool,
 }
 
@@ -659,6 +660,7 @@ impl ScreenInGame {
 
             continue_flag: Default::default(),
             continue_level_add_flag: Default::default(),
+            secret_found_flag: Default::default(),
             game_over_flag: Default::default(),
         }
     }
@@ -893,8 +895,13 @@ impl Screen for ScreenInGame {
         }
 
         if self.game_over_flag {
-            console.set_cursor_pos(((Game::CONSOLE_MIN_WIDTH - 13) as f64 * 0.5) as usize, 0);
-            console.draw_text("You have won!");
+            if self.secret_found_flag {
+                console.set_cursor_pos(((Game::CONSOLE_MIN_WIDTH - 13) as f64 * 0.5) as usize, 0);
+                console.draw_text("Secret found!");
+            }else {
+                console.set_cursor_pos(((Game::CONSOLE_MIN_WIDTH - 13) as f64 * 0.5) as usize, 0);
+                console.draw_text("You have won!");
+            }
         }
 
         if let Some(ref level) = self.level_now {
@@ -927,7 +934,20 @@ impl Screen for ScreenInGame {
 
     fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
         if game_state.is_dialog_opened() {
-            if key == b'y' as i32 {
+            if self.secret_found_flag && (key == b'y' as i32 || key == b'n' as i32) {
+                game_state.close_dialog();
+
+                self.continue_flag = false;
+                self.continue_level_add_flag = false;
+                self.game_over_flag = false;
+                self.secret_found_flag = false;
+
+                game_state.set_screen(ScreenId::SelectLevelPack);
+
+                return;
+            }
+
+            if key == b'y' as i32 || (self.secret_found_flag && key == b'n' as i32) {
                 game_state.close_dialog();
 
                 self.continue_flag = false;
@@ -1047,7 +1067,12 @@ impl Screen for ScreenInGame {
                 keys::LEFT => {
                     let tile = self.level_now.as_ref().unwrap().get_tile(player_pos_tmp.0 - 1, player_pos_tmp.1).unwrap().clone();
                     match tile {
-                        Tile::Empty | Tile::Goal | Tile::OneWayLeft => {
+                        Tile::Empty | Tile::Goal | Tile::OneWayLeft | Tile::Secret => {
+                            if tile == Tile::Secret {
+                                self.game_over_flag = true;
+                                self.secret_found_flag = true;
+                            }
+
                             self.player_pos = (x - 1, y);
                         },
                         Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if
@@ -1063,7 +1088,12 @@ impl Screen for ScreenInGame {
                 keys::UP => {
                     let tile = self.level_now.as_ref().unwrap().get_tile(player_pos_tmp.0, player_pos_tmp.1 - 1).unwrap().clone();
                     match tile {
-                        Tile::Empty | Tile::Goal | Tile::OneWayUp => {
+                        Tile::Empty | Tile::Goal | Tile::OneWayUp | Tile::Secret => {
+                            if tile == Tile::Secret {
+                                self.game_over_flag = true;
+                                self.secret_found_flag = true;
+                            }
+
                             self.player_pos = (x, y - 1);
                         },
                         Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if
@@ -1079,7 +1109,12 @@ impl Screen for ScreenInGame {
                 keys::RIGHT => {
                     let tile = self.level_now.as_ref().unwrap().get_tile(player_pos_tmp.0 + 1, player_pos_tmp.1).unwrap().clone();
                     match tile {
-                        Tile::Empty | Tile::Goal | Tile::OneWayRight => {
+                        Tile::Empty | Tile::Goal | Tile::OneWayRight | Tile::Secret => {
+                            if tile == Tile::Secret {
+                                self.game_over_flag = true;
+                                self.secret_found_flag = true;
+                            }
+
                             self.player_pos = (x + 1, y);
                         },
                         Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if
@@ -1095,7 +1130,12 @@ impl Screen for ScreenInGame {
                 keys::DOWN => {
                     let tile = self.level_now.as_ref().unwrap().get_tile(player_pos_tmp.0, player_pos_tmp.1 + 1).unwrap().clone();
                     match tile {
-                        Tile::Empty | Tile::Goal | Tile::OneWayDown => {
+                        Tile::Empty | Tile::Goal | Tile::OneWayDown | Tile::Secret => {
+                            if tile == Tile::Secret {
+                                self.game_over_flag = true;
+                                self.secret_found_flag = true;
+                            }
+
                             self.player_pos = (x, y + 1);
                         },
                         Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if
@@ -1135,6 +1175,10 @@ impl Screen for ScreenInGame {
 
                 //TODO replace with error popup
                 level_pack.save_save_game().expect("Can not save save game");
+            }
+
+            if self.secret_found_flag {
+                game_state.open_dialog(Dialog::new("You have found a secret!"));
             }
         }
     }
