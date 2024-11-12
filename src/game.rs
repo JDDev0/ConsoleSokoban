@@ -15,8 +15,9 @@ mod help_page;
 pub struct Game<'a> {
     console: &'a Console<'a>,
 
-    screens: HashMap<ScreenId, Box<dyn Screen>>,
+    screens: HashMap<ScreenId, RefCell<Box<dyn Screen>>>,
     current_screen_id: RefCell<ScreenId>,
+    should_call_on_set_screen: RefCell<bool>,
 
     help_page: HelpPage,
     is_help: RefCell<bool>,
@@ -86,7 +87,7 @@ impl <'a> Game<'a> {
             (ScreenId::SelectLevelPack, Box::new(ScreenSelectLevelPack::new()) as Box<dyn Screen>),
             (ScreenId::SelectLevel, Box::new(ScreenSelectLevel::new()) as Box<dyn Screen>),
             (ScreenId::InGame, Box::new(ScreenInGame::new()) as Box<dyn Screen>),
-        ]);
+        ].into_iter().map(|(k, v)| (k, RefCell::new(v))));
 
         let mut level_packs = Vec::with_capacity(LevelPack::MAX_LEVEL_PACK_COUNT);
         level_packs.append(&mut vec![
@@ -115,6 +116,7 @@ impl <'a> Game<'a> {
 
             screens,
             current_screen_id: RefCell::new(ScreenId::StartMenu),
+            should_call_on_set_screen: Default::default(),
 
             help_page: HelpPage::new(),
             is_help: Default::default(),
@@ -147,6 +149,12 @@ impl <'a> Game<'a> {
         if !*self.is_help.borrow() {
             let screen = self.screens.get(&self.current_screen_id.borrow());
             if let Some(screen) = screen {
+                let mut screen = screen.borrow_mut();
+
+                if self.should_call_on_set_screen.replace(false) {
+                    screen.on_set_screen(self);
+                }
+
                 screen.update(self);
             }
         }
@@ -172,7 +180,7 @@ impl <'a> Game<'a> {
                 self.close_help_page();
 
                 if let Some(screen) = screen {
-                    screen.on_continue(self);
+                    screen.borrow_mut().on_continue(self);
                 }
             }else {
                 self.help_page.on_key_pressed(key);
@@ -182,7 +190,7 @@ impl <'a> Game<'a> {
         }
 
         if let Some(screen) = screen {
-            screen.on_key_pressed(self, key);
+            screen.borrow_mut().on_key_pressed(self, key);
         }
     }
 
@@ -218,7 +226,7 @@ impl <'a> Game<'a> {
 
         let screen = self.screens.get(&self.current_screen_id.borrow());
         if let Some(screen) = screen {
-            screen.on_mouse_pressed(self, column, row);
+            screen.borrow_mut().on_mouse_pressed(self, column, row);
         }
     }
 
@@ -233,7 +241,7 @@ impl <'a> Game<'a> {
 
         let screen = self.screens.get(&self.current_screen_id.borrow());
         if let Some(screen) = screen {
-            screen.draw(self, self.console);
+            screen.borrow().draw(self, self.console);
         }
 
         if let Some(dialog) = self.dialog.borrow().as_ref() {
@@ -243,11 +251,7 @@ impl <'a> Game<'a> {
 
     pub fn set_screen(&self, screen_id: ScreenId) {
         self.current_screen_id.replace(screen_id);
-
-        let screen = self.screens.get(&self.current_screen_id.borrow());
-        if let Some(screen) = screen {
-            screen.on_set_screen(self);
-        }
+        self.should_call_on_set_screen.replace(true);
     }
 
     pub fn level_packs(&self) -> &RefCell<Vec<LevelPack>> {
