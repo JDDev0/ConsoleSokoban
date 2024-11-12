@@ -2,7 +2,7 @@ use console_lib::{keys, Color, Console};
 use std::cmp::Ordering;
 use std::mem;
 use std::time::SystemTime;
-use crate::game::Game;
+use crate::game::{Game, GameState};
 use crate::game::level::{Level, Tile};
 
 pub struct Dialog {
@@ -99,15 +99,15 @@ pub enum ScreenId {
 
 #[allow(unused_variables)]
 pub trait Screen {
-    fn draw(&self, game: &Game, console: &Console);
+    fn draw(&self, game_state: &GameState, console: &Console);
 
-    fn update(&mut self, game: &Game) {}
+    fn update(&mut self, game_state: &mut GameState) {}
 
-    fn on_key_pressed(&mut self, game: &Game, key: i32) {}
-    fn on_mouse_pressed(&mut self, game: &Game, column: usize, row: usize) {}
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {}
+    fn on_mouse_pressed(&mut self, game_state: &mut GameState, column: usize, row: usize) {}
 
-    fn on_continue(&mut self, game: &Game) {}
-    fn on_set_screen(&mut self, game: &Game) {}
+    fn on_continue(&mut self, game_state: &mut GameState) {}
+    fn on_set_screen(&mut self, game_state: &mut GameState) {}
 }
 
 pub struct ScreenStartMenu {}
@@ -119,7 +119,7 @@ impl ScreenStartMenu {
 }
 
 impl Screen for ScreenStartMenu {
-    fn draw(&self, _: &Game, console: &Console) {//Draw border (top)
+    fn draw(&self, _: &GameState, console: &Console) {//Draw border (top)
         console.set_color(Color::White, Color::Blue);
         console.draw_text(
             "/------------------------------------------------------------------------\\\n"
@@ -177,48 +177,48 @@ impl Screen for ScreenStartMenu {
         console.draw_text("\n\\------------------------------------------------------------------------/");
     }
 
-    fn on_key_pressed(&mut self, game: &Game, key: i32) {
-        if game.is_dialog_opened() {
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
+        if game_state.is_dialog_opened() {
             if key == b'y' as i32 {
-                game.close_dialog();
-                game.exit();
+                game_state.close_dialog();
+                game_state.exit();
 
                 return;
             }else if key == b'n' as i32 {
-                game.close_dialog();
+                game_state.close_dialog();
             }
 
             return;
         }
 
         if key == keys::ESC {
-            game.open_dialog(Dialog::new("Exit game?"));
+            game_state.open_dialog(Dialog::new("Exit game?"));
 
             return;
         }
 
         if key == keys::F1 {
-            game.open_help_page();
+            game_state.open_help_page();
 
             return;
         }
 
         if key == keys::ENTER {
-            game.set_screen(ScreenId::SelectLevelPack);
+            game_state.set_screen(ScreenId::SelectLevelPack);
         }
     }
 
-    fn on_mouse_pressed(&mut self, game: &Game, column: usize, row: usize) {
-        if game.is_dialog_opened() {
+    fn on_mouse_pressed(&mut self, game_state: &mut GameState, column: usize, row: usize) {
+        if game_state.is_dialog_opened() {
             return;
         }
 
         if row == 16 && column > 26 && column < 32 {
-            self.on_key_pressed(game, keys::ENTER);
+            self.on_key_pressed(game_state, keys::ENTER);
         }
 
         if row == 21 && column > 64 && column < 73 {
-            game.open_help_page();
+            game_state.open_help_page();
         }
     }
 }
@@ -232,7 +232,7 @@ impl ScreenSelectLevelPack {
 }
 
 impl Screen for ScreenSelectLevelPack {
-    fn draw(&self, game: &Game, console: &Console) {
+    fn draw(&self, game_state: &GameState, console: &Console) {
         console.reset_color();
         console.set_underline(true);
         console.draw_text("Select a level pack:");
@@ -241,8 +241,8 @@ impl Screen for ScreenSelectLevelPack {
         //Draw first line
         console.set_cursor_pos(0, 1);
         console.draw_text("-");
-        let mut max = game.get_level_pack_count()%24;
-        if game.get_level_pack_count()/24 > 0 {
+        let mut max = game_state.get_level_pack_count()%24;
+        if game_state.get_level_pack_count()/24 > 0 {
             max = 24;
         }
 
@@ -253,7 +253,7 @@ impl Screen for ScreenSelectLevelPack {
             console.draw_text("---");
         }
 
-        for i in 0..game.get_level_pack_count() {
+        for i in 0..game_state.get_level_pack_count() {
             let x = 1 + (i%24)*3;
             let y = 2 + (i/24)*2;
 
@@ -267,7 +267,7 @@ impl Screen for ScreenSelectLevelPack {
             }
 
             console.set_cursor_pos(x, y);
-            console.set_color(Color::Black, if game.level_packs().borrow().get(i).
+            console.set_color(Color::Black, if game_state.level_packs().get(i).
                     unwrap().level_pack_best_moves_sum().is_some() {
                 Color::Green
             }else {
@@ -283,8 +283,8 @@ impl Screen for ScreenSelectLevelPack {
         }
 
         //Mark selected level
-        let x = (game.get_level_pack_index()%24)*3;
-        let y = 1 + (game.get_level_pack_index()/24)*2;
+        let x = (game_state.get_level_pack_index()%24)*3;
+        let y = 1 + (game_state.get_level_pack_index()/24)*2;
 
         console.set_color(Color::Cyan, Color::Default);
         console.set_cursor_pos(x, y);
@@ -297,7 +297,7 @@ impl Screen for ScreenSelectLevelPack {
         console.draw_text("----");
 
         //Draw border for best time and best moves
-        let y = 4 + (game.get_level_pack_count()/24)*2;
+        let y = 4 + (game_state.get_level_pack_count()/24)*2;
 
         console.set_cursor_pos(0, y);
         console.set_color(Color::Cyan, Color::Default);
@@ -312,10 +312,10 @@ impl Screen for ScreenSelectLevelPack {
         console.reset_color();
         //Draw sum of best time and sum of best moves
         console.set_cursor_pos(1, y + 1);
-        console.draw_text(format!("Selected level pack:             {:02}", game.get_level_pack_index() + 1));
+        console.draw_text(format!("Selected level pack:             {:02}", game_state.get_level_pack_index() + 1));
         console.set_cursor_pos(1, y + 2);
         console.draw_text("Sum of best time   : ");
-        match game.get_current_level_pack().as_ref().unwrap().level_pack_best_time_sum() {
+        match game_state.get_current_level_pack().as_ref().unwrap().level_pack_best_time_sum() {
             None => console.draw_text("X:XX:XX:XX.XXX"),
             Some(best_time_sum) => {
                 console.draw_text(format!(
@@ -330,21 +330,21 @@ impl Screen for ScreenSelectLevelPack {
         }
         console.set_cursor_pos(1, y + 3);
         console.draw_text("Sum of best moves  :        ");
-        match game.get_current_level_pack().as_ref().unwrap().level_pack_best_moves_sum() {
+        match game_state.get_current_level_pack().as_ref().unwrap().level_pack_best_moves_sum() {
             None => console.draw_text("XXXXXXX"),
             Some(best_moves_sum) => console.draw_text(format!("{:07}", best_moves_sum)),
         }
     }
 
-    fn on_key_pressed(&mut self, game: &Game, key: i32) {
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
         if key == keys::ESC {
-            game.set_screen(ScreenId::StartMenu);
+            game_state.set_screen(ScreenId::StartMenu);
 
             return;
         }
 
         if key == keys::F1 {
-            game.open_help_page();
+            game_state.open_help_page();
 
             return;
         }
@@ -352,44 +352,44 @@ impl Screen for ScreenSelectLevelPack {
         'outer: {
             match key {
                 keys::LEFT => {
-                    if *game.current_level_pack_index.borrow() == 0 {
+                    if game_state.current_level_pack_index == 0 {
                         break 'outer;
                     }
 
-                    game.current_level_pack_index.replace_with(|i| *i - 1);
+                    game_state.current_level_pack_index -= 1;
                 },
                 keys::UP => {
-                    if *game.current_level_pack_index.borrow() <= 24 {
+                    if game_state.current_level_pack_index <= 24 {
                         break 'outer;
                     }
 
-                    game.current_level_pack_index.replace_with(|i| *i - 24);
+                    game_state.current_level_pack_index -= 24;
                 },
                 keys::RIGHT => {
-                    if *game.current_level_pack_index.borrow() + 1 >= game.get_level_pack_count() {
+                    if game_state.current_level_pack_index + 1 >= game_state.get_level_pack_count() {
                         break 'outer;
                     }
 
-                    game.current_level_pack_index.replace_with(|i| *i + 1);
+                    game_state.current_level_pack_index += 1;
                 },
                 keys::DOWN => {
-                    if *game.current_level_pack_index.borrow() + 24 >= game.get_level_pack_count() {
+                    if game_state.current_level_pack_index + 24 >= game_state.get_level_pack_count() {
                         break 'outer;
                     }
 
-                    game.current_level_pack_index.replace_with(|i| *i + 24);
+                    game_state.current_level_pack_index += 24;
                 },
 
                 keys::ENTER => {
                     //Set selected level
-                    if game.get_current_level_pack().as_ref().unwrap().min_level_not_completed() ==
-                            game.get_current_level_pack().as_ref().unwrap().level_count() {
-                        game.set_level_index(0);
+                    if game_state.get_current_level_pack().as_ref().unwrap().min_level_not_completed() ==
+                            game_state.get_current_level_pack().as_ref().unwrap().level_count() {
+                        game_state.set_level_index(0);
                     }else {
-                        game.set_level_index(game.get_current_level_pack().as_ref().unwrap().min_level_not_completed());
+                        game_state.set_level_index(game_state.get_current_level_pack().as_ref().unwrap().min_level_not_completed());
                     }
 
-                    game.set_screen(ScreenId::SelectLevel);
+                    game_state.set_screen(ScreenId::SelectLevel);
                 },
 
                 _ => {},
@@ -397,15 +397,15 @@ impl Screen for ScreenSelectLevelPack {
         }
     }
 
-    fn on_mouse_pressed(&mut self, game: &Game, column: usize, row: usize) {
+    fn on_mouse_pressed(&mut self, game_state: &mut GameState, column: usize, row: usize) {
         if row == 0 {
             return;
         }
 
         let level_pack_index = column/3 + (row - 1)/2*24;
-        if level_pack_index < game.get_level_pack_count() {
-            game.set_level_pack_index(level_pack_index);
-            self.on_key_pressed(game, keys::ENTER);
+        if level_pack_index < game_state.get_level_pack_count() {
+            game_state.set_level_pack_index(level_pack_index);
+            self.on_key_pressed(game_state, keys::ENTER);
         }
     }
 }
@@ -423,13 +423,13 @@ impl ScreenSelectLevel {
 }
 
 impl Screen for ScreenSelectLevel {
-    fn draw(&self, game: &Game, console: &Console) {
+    fn draw(&self, game_state: &GameState, console: &Console) {
         console.reset_color();
         console.set_underline(true);
-        console.draw_text(format!("Select a level (Level pack \"{}\"):", game.get_current_level_pack().unwrap().id()));
+        console.draw_text(format!("Select a level (Level pack \"{}\"):", game_state.get_current_level_pack().unwrap().id()));
         console.set_underline(false);
 
-        let level_count = game.get_current_level_pack().as_ref().unwrap().level_count();
+        let level_count = game_state.get_current_level_pack().as_ref().unwrap().level_count();
 
         //Draw first line
         console.set_cursor_pos(0, 1);
@@ -458,7 +458,7 @@ impl Screen for ScreenSelectLevel {
                 console.draw_text("-");
             }
 
-            let min_level_not_completed = game.get_current_level_pack().as_ref().unwrap().min_level_not_completed();
+            let min_level_not_completed = game_state.get_current_level_pack().as_ref().unwrap().min_level_not_completed();
             console.set_color(
                 Color::Black,
                 match i.cmp(&min_level_not_completed) {
@@ -523,7 +523,7 @@ impl Screen for ScreenSelectLevel {
         }
         console.set_cursor_pos(1, y + 2);
         console.draw_text("Best time     : ");
-        match game.get_current_level_pack().as_ref().unwrap().levels().get(selected_level).unwrap().best_time() {
+        match game_state.get_current_level_pack().as_ref().unwrap().levels().get(selected_level).unwrap().best_time() {
             None => console.draw_text("XX:XX.XXX"),
             Some(best_time) => {
                 console.draw_text(format!(
@@ -536,7 +536,7 @@ impl Screen for ScreenSelectLevel {
         }
         console.set_cursor_pos(1, y + 3);
         console.draw_text("Best moves    :      ");
-        match game.get_current_level_pack().as_ref().unwrap().levels().get(selected_level).unwrap().best_moves() {
+        match game_state.get_current_level_pack().as_ref().unwrap().levels().get(selected_level).unwrap().best_moves() {
             None => console.draw_text("XXXX"),
             Some(best_moves) => {
                 console.draw_text(format!("{:04}", best_moves));
@@ -544,15 +544,15 @@ impl Screen for ScreenSelectLevel {
         }
     }
 
-    fn on_key_pressed(&mut self, game: &Game, key: i32) {
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
         if key == keys::ESC {
-            game.set_screen(ScreenId::SelectLevelPack);
+            game_state.set_screen(ScreenId::SelectLevelPack);
 
             return;
         }
 
         if key == keys::F1 {
-            game.open_help_page();
+            game_state.open_help_page();
 
             return;
         }
@@ -574,7 +574,7 @@ impl Screen for ScreenSelectLevel {
                     self.selected_level -= 24;
                 },
                 keys::RIGHT => {
-                    if self.selected_level + 1 >= game.get_current_level_pack().
+                    if self.selected_level + 1 >= game_state.get_current_level_pack().
                             as_ref().unwrap().level_count() {
                         break 'outer;
                     }
@@ -582,7 +582,7 @@ impl Screen for ScreenSelectLevel {
                     self.selected_level += 1;
                 },
                 keys::DOWN => {
-                    if self.selected_level + 24 >= game.get_current_level_pack().
+                    if self.selected_level + 24 >= game_state.get_current_level_pack().
                             as_ref().unwrap().level_count() {
                         break 'outer;
                     }
@@ -590,10 +590,10 @@ impl Screen for ScreenSelectLevel {
                     self.selected_level += 24;
                 },
 
-                keys::ENTER if self.selected_level <= game.get_current_level_pack().
+                keys::ENTER if self.selected_level <= game_state.get_current_level_pack().
                         as_ref().unwrap().min_level_not_completed() => {
-                    game.set_level_index(self.selected_level);
-                    game.set_screen(ScreenId::InGame);
+                    game_state.set_level_index(self.selected_level);
+                    game_state.set_screen(ScreenId::InGame);
                 },
 
                 _ => {},
@@ -601,20 +601,20 @@ impl Screen for ScreenSelectLevel {
         }
     }
 
-    fn on_mouse_pressed(&mut self, game: &Game, column: usize, row: usize) {
+    fn on_mouse_pressed(&mut self, game_state: &mut GameState, column: usize, row: usize) {
         if row == 0 {
             return;
         }
 
         let level_index = column/3 + (row - 1)/2*24;
-        if level_index < game.get_current_level_pack().as_ref().unwrap().level_count() {
+        if level_index < game_state.get_current_level_pack().as_ref().unwrap().level_count() {
             self.selected_level = level_index;
-            self.on_key_pressed(game, keys::ENTER);
+            self.on_key_pressed(game_state, keys::ENTER);
         }
     }
 
-    fn on_set_screen(&mut self, game: &Game) {
-        self.selected_level = game.get_level_index();
+    fn on_set_screen(&mut self, game_state: &mut GameState) {
+        self.selected_level = game_state.get_level_index();
     }
 }
 
@@ -691,11 +691,11 @@ impl ScreenInGame {
         }
     }
 
-    fn draw_tutorial_level_text(&self, game: &Game, console: &Console) {
+    fn draw_tutorial_level_text(&self, game_state: &GameState, console: &Console) {
         //Draw special help text for tutorial levels (tutorial pack and tutorial levels in special pack)
-        if game.get_level_pack_index() == 0 { //Tutorial pack
+        if game_state.get_level_pack_index() == 0 { //Tutorial pack
             console.reset_color();
-            match *game.current_level_index.borrow() {
+            match game_state.current_level_index {
                 0 => {
                     if self.continue_flag {
                         console.set_cursor_pos(18, 8);
@@ -804,9 +804,9 @@ impl ScreenInGame {
                 },
                 _ => {},
             }
-        }else if game.get_level_pack_index() == 2 { //Built-in special pack
+        }else if game_state.get_level_pack_index() == 2 { //Built-in special pack
             console.reset_color();
-            match *game.current_level_index.borrow() {
+            match game_state.current_level_index {
                 0 => {
                     console.set_cursor_pos(18, 8);
                     console.draw_text("Keys (");
@@ -862,13 +862,13 @@ impl ScreenInGame {
 }
 
 impl Screen for ScreenInGame {
-    fn draw(&self, game: &Game, console: &Console) {
+    fn draw(&self, game_state: &GameState, console: &Console) {
         console.reset_color();
-        console.draw_text(format!("Pack: {:02}", game.get_level_pack_index() + 1));
+        console.draw_text(format!("Pack: {:02}", game_state.get_level_pack_index() + 1));
 
         console.set_cursor_pos(((Game::CONSOLE_MIN_WIDTH - 9) as f64 * 0.25) as usize, 0);
         console.draw_text("Level: ");
-        let level = *game.current_level_index.borrow() + 1;
+        let level = game_state.current_level_index + 1;
         if level < 100 {
             console.draw_text(format!("{:02}", level));
         }else {
@@ -901,14 +901,14 @@ impl Screen for ScreenInGame {
             let x_offset = ((Game::CONSOLE_MIN_WIDTH - level.width()) as f64 * 0.5) as usize;
             let y_offset = 1;
 
-            level.draw(console, x_offset, y_offset, game.is_player_background());
+            level.draw(console, x_offset, y_offset, game_state.is_player_background());
 
-            self.draw_tutorial_level_text(game, console);
+            self.draw_tutorial_level_text(game_state, console);
         }
     }
 
-    fn update(&mut self, game: &Game) {
-        if game.is_dialog_opened() || self.game_over_flag || self.continue_flag {
+    fn update(&mut self, game_state: &mut GameState) {
+        if game_state.is_dialog_opened() || self.game_over_flag || self.continue_flag {
             return;
         }
 
@@ -925,20 +925,20 @@ impl Screen for ScreenInGame {
         }
     }
 
-    fn on_key_pressed(&mut self, game: &Game, key: i32) {
-        if game.is_dialog_opened() {
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
+        if game_state.is_dialog_opened() {
             if key == b'y' as i32 {
-                game.close_dialog();
+                game_state.close_dialog();
 
                 self.continue_flag = false;
                 self.continue_level_add_flag = false;
                 self.game_over_flag = false;
 
-                game.set_screen(ScreenId::SelectLevel);
+                game_state.set_screen(ScreenId::SelectLevel);
             }else if key == b'n' as i32 {
-                game.close_dialog();
+                game_state.close_dialog();
 
-                self.on_continue(game);
+                self.on_continue(game_state);
             }
 
             return;
@@ -950,14 +950,14 @@ impl Screen for ScreenInGame {
                 self.continue_level_add_flag = false;
                 self.game_over_flag = false;
 
-                game.set_screen(ScreenId::SelectLevel);
+                game_state.set_screen(ScreenId::SelectLevel);
 
                 return;
             }
 
             self.time_start_in_menu = Some(SystemTime::now());
 
-            game.open_dialog(Dialog::new("Back to level selection?"));
+            game_state.open_dialog(Dialog::new("Back to level selection?"));
 
             return;
         }
@@ -965,20 +965,21 @@ impl Screen for ScreenInGame {
         if key == keys::F1 {
             self.time_start_in_menu = Some(SystemTime::now());
 
-            game.open_help_page();
+            game_state.open_help_page();
 
             return;
         }
 
-        let Some(mut level_pack) = game.get_current_level_pack_mut() else {
+        let current_level_index = game_state.current_level_index;
+        let Some(level_pack) = game_state.get_current_level_pack_mut() else {
             return;
         };
 
         //Level end
         if self.continue_flag {
             if self.continue_level_add_flag {
-                if *game.current_level_index.borrow() >= level_pack.min_level_not_completed() {
-                    level_pack.set_min_level_not_completed(*game.current_level_index.borrow() + 1);
+                if current_level_index >= level_pack.min_level_not_completed() {
+                    level_pack.set_min_level_not_completed(current_level_index + 1);
                 }
 
                 self.continue_level_add_flag = false;
@@ -988,19 +989,19 @@ impl Screen for ScreenInGame {
                 self.continue_flag = false;
 
                 //All levels completed
-                if *game.current_level_index.borrow() + 1 == level_pack.level_count() {
+                if current_level_index + 1 == level_pack.level_count() {
                     self.game_over_flag = true;
 
                     return;
                 }else {
-                    game.current_level_index.replace_with(|current_level_index| *current_level_index + 1);
+                    game_state.current_level_index += 1;
                 }
 
-                self.start_level(level_pack.levels()[*game.current_level_index.borrow()].level());
+                self.start_level(game_state.get_current_level_pack().unwrap().levels()[game_state.current_level_index].level());
             }else if key == 'r' as i32 {
                 self.continue_flag = false;
 
-                self.start_level(level_pack.levels()[*game.current_level_index.borrow()].level());
+                self.start_level(level_pack.levels()[current_level_index].level());
             }
 
             return;
@@ -1019,7 +1020,7 @@ impl Screen for ScreenInGame {
 
         //Reset
         if key == 'r' as i32 {
-            self.start_level(level_pack.levels()[*game.current_level_index.borrow()].level());
+            self.start_level(level_pack.levels()[current_level_index].level());
         }
 
         if console_lib::is_arrow_key(key) {
@@ -1028,7 +1029,7 @@ impl Screen for ScreenInGame {
             let player_pos_tmp = self.player_pos;
 
             //Set players old position to old level data
-            let mut tile = level_pack.levels()[*game.current_level_index.borrow()].level().
+            let mut tile = level_pack.levels()[current_level_index].level().
                     get_tile(player_pos_tmp.0, player_pos_tmp.1).unwrap().clone();
             if tile == Tile::Player || tile == Tile::Box || tile == Tile::Key || tile == Tile::LockedDoor {
                 tile = Tile::Empty;
@@ -1051,7 +1052,7 @@ impl Screen for ScreenInGame {
                         },
                         Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if
                         self.level_now.as_mut().unwrap().move_box_or_key(
-                            level_pack.levels().get(*game.current_level_index.borrow()).unwrap().level(),
+                            level_pack.levels().get(current_level_index).unwrap().level(),
                             &mut has_won, player_pos_tmp.0 - 1, player_pos_tmp.1, -1, 0
                         ) => {
                             self.player_pos = (x - 1, y);
@@ -1067,7 +1068,7 @@ impl Screen for ScreenInGame {
                         },
                         Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if
                         self.level_now.as_mut().unwrap().move_box_or_key(
-                            level_pack.levels().get(*game.current_level_index.borrow()).unwrap().level(),
+                            level_pack.levels().get(current_level_index).unwrap().level(),
                             &mut has_won, player_pos_tmp.0, player_pos_tmp.1 - 1, 0, -1
                         ) => {
                             self.player_pos = (x, y - 1);
@@ -1083,7 +1084,7 @@ impl Screen for ScreenInGame {
                         },
                         Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if
                         self.level_now.as_mut().unwrap().move_box_or_key(
-                            level_pack.levels().get(*game.current_level_index.borrow()).unwrap().level(),
+                            level_pack.levels().get(current_level_index).unwrap().level(),
                             &mut has_won, player_pos_tmp.0 + 1, player_pos_tmp.1, 1, 0
                         ) => {
                             self.player_pos = (x + 1, y);
@@ -1099,7 +1100,7 @@ impl Screen for ScreenInGame {
                         },
                         Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if
                         self.level_now.as_mut().unwrap().move_box_or_key(
-                            level_pack.levels().get(*game.current_level_index.borrow()).unwrap().level(),
+                            level_pack.levels().get(current_level_index).unwrap().level(),
                             &mut has_won, player_pos_tmp.0, player_pos_tmp.1 + 1, 0, 1
                         ) => {
                             self.player_pos = (x, y + 1);
@@ -1130,7 +1131,7 @@ impl Screen for ScreenInGame {
                 let time = self.time_millis as u64 + 1000 * self.time_sec as u64 + 60000 * self.time_min as u64;
                 let moves = self.moves;
 
-                level_pack.update_stats(*game.current_level_index.borrow(), time, moves);
+                level_pack.update_stats(current_level_index, time, moves);
 
                 //TODO replace with error popup
                 level_pack.save_save_game().expect("Can not save save game");
@@ -1138,7 +1139,7 @@ impl Screen for ScreenInGame {
         }
     }
 
-    fn on_continue(&mut self, _: &Game) {
+    fn on_continue(&mut self, _: &mut GameState) {
         if self.game_over_flag || self.continue_flag || self.time_start.is_none() || self.time_start_in_menu.is_none() {
             return;
         }
@@ -1149,8 +1150,8 @@ impl Screen for ScreenInGame {
         self.time_start = self.time_start.map(|time_start| time_start + diff);
     }
 
-    fn on_set_screen(&mut self, game: &Game) {
-        self.start_level(game.get_current_level_pack().as_ref().unwrap().levels().get(
-            game.get_level_index()).unwrap().level());
+    fn on_set_screen(&mut self, game_state: &mut GameState) {
+        self.start_level(game_state.get_current_level_pack().as_ref().unwrap().levels().get(
+            game_state.get_level_index()).unwrap().level());
     }
 }

@@ -1,9 +1,10 @@
 use console_lib::{keys, Console};
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::error::Error;
 use std::ffi::OsString;
 use std::fmt::{Debug, Display, Formatter};
+use std::mem;
 use crate::game::help_page::HelpPage;
 use crate::game::level::LevelPack;
 use crate::game::screen::{Dialog, Screen, ScreenId, ScreenInGame, ScreenSelectLevel, ScreenSelectLevelPack, ScreenStartMenu};
@@ -12,26 +13,118 @@ mod level;
 mod screen;
 mod help_page;
 
+pub struct GameState {
+    current_screen_id: ScreenId,
+    should_call_on_set_screen: bool,
+
+    is_help: bool,
+    dialog: Option<Dialog>,
+
+    current_level_pack_index: usize,
+    level_packs: Vec<LevelPack>,
+
+    current_level_index: usize,
+
+    is_player_background: bool,
+    player_background_tmp: i32,
+
+    should_exit: bool,
+}
+
+impl GameState {
+    fn new(level_packs: Vec<LevelPack>) -> Self {
+        Self {
+            current_screen_id: ScreenId::StartMenu,
+            should_call_on_set_screen: Default::default(),
+
+            is_help: Default::default(),
+            dialog: Default::default(),
+
+            current_level_pack_index: Default::default(),
+            level_packs,
+
+            current_level_index: Default::default(),
+
+            is_player_background: Default::default(),
+            player_background_tmp: Default::default(),
+
+            should_exit: Default::default(),
+        }
+    }
+
+    pub fn set_screen(&mut self, screen_id: ScreenId) {
+        self.current_screen_id = screen_id;
+        self.should_call_on_set_screen = true;
+    }
+
+    pub fn level_packs(&self) -> &Vec<LevelPack> {
+        &self.level_packs
+    }
+
+    pub fn get_level_pack_count(&self) -> usize {
+        self.level_packs.len()
+    }
+
+    pub fn get_level_pack_index(&self) -> usize {
+        self.current_level_pack_index
+    }
+
+    pub fn set_level_pack_index(&mut self, level_pack_index: usize) {
+        self.current_level_pack_index = level_pack_index;
+    }
+
+    pub fn get_current_level_pack(&self) -> Option<&LevelPack> {
+        self.level_packs.get(self.get_level_pack_index())
+    }
+
+    pub fn get_current_level_pack_mut(&mut self) -> Option<&mut LevelPack> {
+        self.level_packs.get_mut(self.current_level_pack_index)
+    }
+
+    pub fn get_level_index(&self) -> usize {
+        self.current_level_index
+    }
+
+    pub fn set_level_index(&mut self, level_index: usize) {
+        self.current_level_index = level_index;
+    }
+
+    pub fn is_player_background(&self) -> bool {
+        self.is_player_background
+    }
+
+    pub fn open_help_page(&mut self) {
+        self.is_help = true;
+    }
+
+    pub fn close_help_page(&mut self) {
+        self.is_help = false;
+    }
+
+    pub fn is_dialog_opened(&self) -> bool {
+        self.dialog.is_some()
+    }
+
+    pub fn open_dialog(&mut self, dialog: Dialog) {
+        self.dialog = Some(dialog);
+    }
+
+    pub fn close_dialog(&mut self) {
+        self.dialog = None;
+    }
+
+    pub fn exit(&mut self) {
+        self.should_exit = true;
+    }
+}
+
 pub struct Game<'a> {
     console: &'a Console<'a>,
 
     screens: HashMap<ScreenId, RefCell<Box<dyn Screen>>>,
-    current_screen_id: RefCell<ScreenId>,
-    should_call_on_set_screen: RefCell<bool>,
-
     help_page: RefCell<HelpPage>,
-    is_help: RefCell<bool>,
-    dialog: RefCell<Option<Dialog>>,
 
-    current_level_pack_index: RefCell<usize>,
-    level_packs: RefCell<Vec<LevelPack>>,
-
-    current_level_index: RefCell<usize>,
-
-    is_player_background: RefCell<bool>,
-    player_background_tmp: RefCell<i32>,
-
-    should_exit: RefCell<bool>,
+    game_state: RefCell<GameState>,
 }
 
 impl <'a> Game<'a> {
@@ -115,72 +208,61 @@ impl <'a> Game<'a> {
             console,
 
             screens,
-            current_screen_id: RefCell::new(ScreenId::StartMenu),
-            should_call_on_set_screen: Default::default(),
-
             help_page: RefCell::new(HelpPage::new()),
-            is_help: Default::default(),
-            dialog: Default::default(),
 
-            current_level_pack_index: Default::default(),
-            level_packs: RefCell::new(level_packs),
-
-            current_level_index: Default::default(),
-
-            is_player_background: Default::default(),
-            player_background_tmp: Default::default(),
-
-            should_exit: Default::default(),
+            game_state: RefCell::new(GameState::new(level_packs)),
         })
     }
 
     #[must_use]
     pub fn update(&self) -> bool {
-        if *self.should_exit.borrow() {
+        let mut game_state = &mut *self.game_state.borrow_mut();
+
+        if game_state.should_exit {
             return true;
         }
 
         if self.console.has_input() {
-            self.update_key(self.console.get_key());
+            self.update_key(&mut game_state, self.console.get_key());
         }
 
-        self.update_mouse();
+        self.update_mouse(&mut game_state);
 
-        if !*self.is_help.borrow() {
-            let screen = self.screens.get(&self.current_screen_id.borrow());
+        if !game_state.is_help {
+            let screen = self.screens.get(&game_state.current_screen_id);
             if let Some(screen) = screen {
                 let mut screen = screen.borrow_mut();
 
-                if self.should_call_on_set_screen.replace(false) {
-                    screen.on_set_screen(self);
+                if mem::replace(&mut game_state.should_call_on_set_screen, false) {
+                    screen.on_set_screen(game_state);
                 }
 
-                screen.update(self);
+                screen.update(game_state);
             }
         }
 
         //Player background
-        self.player_background_tmp.replace_with(|current| *current + 1);
-        if *self.player_background_tmp.borrow() >= Self::PLAYER_BACKGROUND_DELAY + *self.is_player_background.borrow() as i32 {
+        game_state.player_background_tmp += 1;
+        if game_state.player_background_tmp >= Self::PLAYER_BACKGROUND_DELAY + game_state.is_player_background as i32 {
             //If isPlayerBackground: wait an additional update (25 updates per second, every half
             //second: switch background/foreground colors [12 updates, 13 updates])
-            self.player_background_tmp.replace(0);
-            self.is_player_background.replace_with(|current| !*current);
+            game_state.player_background_tmp = 0;
+            game_state.is_player_background = !game_state.is_player_background;
         }
 
-        self.draw();
+        self.draw(game_state);
 
         false
     }
 
-    fn update_key(&self, key: i32) {
-        let screen = self.screens.get(&self.current_screen_id.borrow());
-        if *self.is_help.borrow() {
+    fn update_key(&self, game_state: &mut GameState, key: i32) {
+        let screen = self.screens.get(&game_state.current_screen_id);
+        if game_state.is_help {
             if key == keys::F1 || key == keys::ESC {
-                self.close_help_page();
+                game_state.close_help_page();
 
                 if let Some(screen) = screen {
-                    screen.borrow_mut().on_continue(self);
+                    screen.borrow_mut().on_continue(game_state);
                 }
             }else {
                 self.help_page.borrow_mut().on_key_pressed(key);
@@ -190,11 +272,11 @@ impl <'a> Game<'a> {
         }
 
         if let Some(screen) = screen {
-            screen.borrow_mut().on_key_pressed(self, key);
+            screen.borrow_mut().on_key_pressed(game_state, key);
         }
     }
 
-    fn update_mouse(&self) {
+    fn update_mouse(&self, game_state: &mut GameState) {
         let (column, row) = self.console.get_mouse_pos_clicked();
         if column < 0 || row < 0 {
             return;
@@ -202,20 +284,20 @@ impl <'a> Game<'a> {
 
         let (column, row) = (column as usize, row as usize);
 
-        if *self.is_help.borrow() {
+        if game_state.is_help {
             self.help_page.borrow_mut().on_mouse_pressed(Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT, column, row);
 
             return;
         }
 
         let yes_no;
-        if let Some(dialog) = self.dialog.borrow().as_ref() {
+        if let Some(dialog) = game_state.dialog.as_ref() {
             yes_no = dialog.on_mouse_pressed(Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT, column, row);
         }else {
             yes_no = None;
         }
         if let Some(yes_no) = yes_no {
-            self.update_key(if yes_no {
+            self.update_key(game_state, if yes_no {
                 b'y' as i32
             }else {
                 b'n' as i32
@@ -224,108 +306,29 @@ impl <'a> Game<'a> {
             return;
         }
 
-        let screen = self.screens.get(&self.current_screen_id.borrow());
+        let screen = self.screens.get(&game_state.current_screen_id);
         if let Some(screen) = screen {
-            screen.borrow_mut().on_mouse_pressed(self, column, row);
+            screen.borrow_mut().on_mouse_pressed(game_state, column, row);
         }
     }
 
-    fn draw(&self) {
+    fn draw(&self, game_state: &GameState) {
         self.console.repaint();
 
-        if *self.is_help.borrow() {
+        if game_state.is_help {
             self.help_page.borrow().draw(self.console, Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT);
 
             return;
         }
 
-        let screen = self.screens.get(&self.current_screen_id.borrow());
+        let screen = self.screens.get(&game_state.current_screen_id);
         if let Some(screen) = screen {
-            screen.borrow().draw(self, self.console);
+            screen.borrow().draw(game_state, self.console);
         }
 
-        if let Some(dialog) = self.dialog.borrow().as_ref() {
+        if let Some(dialog) = game_state.dialog.as_ref() {
             dialog.draw(self.console, Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT);
         }
-    }
-
-    pub fn set_screen(&self, screen_id: ScreenId) {
-        self.current_screen_id.replace(screen_id);
-        self.should_call_on_set_screen.replace(true);
-    }
-
-    pub fn level_packs(&self) -> &RefCell<Vec<LevelPack>> {
-        &self.level_packs
-    }
-
-    pub fn get_level_pack_count(&self) -> usize {
-        self.level_packs.borrow().len()
-    }
-
-    pub fn get_level_pack_index(&self) -> usize {
-        *self.current_level_pack_index.borrow()
-    }
-
-    pub fn set_level_pack_index(&self, level_pack_index: usize) {
-        self.current_level_pack_index.replace(level_pack_index);
-    }
-
-    pub fn get_current_level_pack(&self) -> Option<Ref<LevelPack>> {
-        let level_packs = self.level_packs.borrow();
-        let index = self.get_level_pack_index();
-
-        if level_packs.len() > index {
-            return Some(Ref::map(level_packs, |level_packs| &level_packs[index]))
-        }
-
-        None
-    }
-
-    pub fn get_current_level_pack_mut(&self) -> Option<RefMut<LevelPack>> {
-        let level_packs = self.level_packs.borrow_mut();
-        let index = self.get_level_pack_index();
-
-        if level_packs.len() > index {
-            return Some(RefMut::map(level_packs, |level_packs| &mut level_packs[index]))
-        }
-
-        None
-    }
-
-    pub fn get_level_index(&self) -> usize {
-        *self.current_level_index.borrow()
-    }
-
-    pub fn set_level_index(&self, level_index: usize) {
-        self.current_level_index.replace(level_index);
-    }
-
-    pub fn is_player_background(&self) -> bool {
-        *self.is_player_background.borrow()
-    }
-
-    pub fn open_help_page(&self) {
-        self.is_help.replace(true);
-    }
-
-    pub fn close_help_page(&self) {
-        self.is_help.replace(false);
-    }
-
-    pub fn is_dialog_opened(&self) -> bool {
-        self.dialog.borrow().is_some()
-    }
-
-    pub fn open_dialog(&self, dialog: Dialog) {
-        self.dialog.replace(Some(dialog));
-    }
-
-    pub fn close_dialog(&self) {
-        self.dialog.replace(None);
-    }
-
-    pub fn exit(&self) {
-        self.should_exit.replace(true);
     }
 }
 
