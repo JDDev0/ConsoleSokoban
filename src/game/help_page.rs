@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use console_lib::{keys, Color, Console};
 
 enum SectionLayer {
@@ -126,7 +125,7 @@ impl TableOfContents {
 pub struct HelpPage {
     table_of_contents: TableOfContents,
 
-    page: RefCell<u32>,
+    page: u32,
 }
 
 impl HelpPage {
@@ -165,7 +164,7 @@ impl HelpPage {
         console.draw_text("Help menu");
 
         console.set_cursor_pos(0, 2);
-        match *self.page.borrow() {
+        match self.page {
             page @ 0 => {
                 console.set_underline(false);
                 self.table_of_contents.draw(console, 0, 2, width, height - 4, page);
@@ -472,38 +471,33 @@ impl HelpPage {
         console.reset_color();
         console.draw_text("Page: ");
         console.set_color(Color::Cyan, Color::Default);
-        console.draw_text(format!("{}", *self.page.borrow() + 1));
+        console.draw_text(format!("{}", self.page + 1));
         console.reset_color();
         console.draw_text(" of ");
         console.set_color(Color::Cyan, Color::Default);
         console.draw_text(format!("{}", Self::PAGE_COUNT));
     }
 
-    pub fn on_key_pressed(&self, key: i32) {
+    pub fn on_key_pressed(&mut self, key: i32) {
         if key == keys::UP {
-            self.page.replace_with(|page| {
-                if *page == 0 {
-                    Self::PAGE_COUNT - 1
-                }else {
-                    *page - 1
-                }
-            });
+            self.page = if self.page == 0 {
+                Self::PAGE_COUNT - 1
+            }else {
+                self.page - 1
+            };
         }else if key == keys::DOWN {
-            self.page.replace_with(|page| {
-                if *page == Self::PAGE_COUNT - 1 {
-                    0
-                }else {
-                    *page + 1
-                }
-            });
+            self.page = if self.page == Self::PAGE_COUNT - 1 {
+                0
+            }else {
+                self.page + 1
+            };
         }
     }
 
-    pub fn on_mouse_pressed(&self, _width: usize, height: usize, column: usize, row: usize) {
+    pub fn on_mouse_pressed(&mut self, _width: usize, height: usize, column: usize, row: usize) {
         if row > 2 && row < height - 2 {
-            let page = *self.page.borrow();
-            if let Some(page_clicked) = self.table_of_contents.get_page_mouse_clicked(height, page, row as u32 - 2) {
-                self.page.replace(page_clicked);
+            if let Some(page_clicked) = self.table_of_contents.get_page_mouse_clicked(height, self.page, row as u32 - 2) {
+                self.page = page_clicked;
             }
         }
 

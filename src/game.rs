@@ -19,7 +19,7 @@ pub struct Game<'a> {
     current_screen_id: RefCell<ScreenId>,
     should_call_on_set_screen: RefCell<bool>,
 
-    help_page: HelpPage,
+    help_page: RefCell<HelpPage>,
     is_help: RefCell<bool>,
     dialog: RefCell<Option<Dialog>>,
 
@@ -118,7 +118,7 @@ impl <'a> Game<'a> {
             current_screen_id: RefCell::new(ScreenId::StartMenu),
             should_call_on_set_screen: Default::default(),
 
-            help_page: HelpPage::new(),
+            help_page: RefCell::new(HelpPage::new()),
             is_help: Default::default(),
             dialog: Default::default(),
 
@@ -183,7 +183,7 @@ impl <'a> Game<'a> {
                     screen.borrow_mut().on_continue(self);
                 }
             }else {
-                self.help_page.on_key_pressed(key);
+                self.help_page.borrow_mut().on_key_pressed(key);
             }
 
             return;
@@ -203,7 +203,7 @@ impl <'a> Game<'a> {
         let (column, row) = (column as usize, row as usize);
 
         if *self.is_help.borrow() {
-            self.help_page.on_mouse_pressed(Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT, column, row);
+            self.help_page.borrow_mut().on_mouse_pressed(Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT, column, row);
 
             return;
         }
@@ -234,7 +234,7 @@ impl <'a> Game<'a> {
         self.console.repaint();
 
         if *self.is_help.borrow() {
-            self.help_page.draw(self.console, Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT);
+            self.help_page.borrow().draw(self.console, Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT);
 
             return;
         }
