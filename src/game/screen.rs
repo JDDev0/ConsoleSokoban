@@ -670,6 +670,7 @@ impl ScreenInGame {
         self.time_sec.replace(0);
         self.time_min.replace(0);
 
+        self.old_moves.replace(0);
         self.moves.replace(0);
 
         self.level_now.replace(Some(level.clone()));
