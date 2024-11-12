@@ -153,23 +153,6 @@
         *row = -1;
     }
 
-    void makeDirectory(const char* name) {
-        mkdir(name, 0755);
-    }
-
-    void getConfigPathPrefix(char* dest) {
-        strcpy(dest, getenv("HOME"));
-        strcat(dest, "/.jddev0");
-        makeDirectory(dest);
-        strcat(dest, "/" CONFIG_PATH_FOLDER);
-        makeDirectory(dest);
-        strcat(dest, "/");
-    }
-
-    void sleepMS(unsigned int time) {
-        usleep(time * 1000);
-    }
-
     void drawf(const char *restrict format, ...) {
         va_list args;
         va_start(args, format);
@@ -398,24 +381,6 @@
         *row = -1;
     }
 
-    void makeDirectory(const char* name) {
-        _mkdir(name);
-    }
-
-    void getConfigPathPrefix(char* dest) {
-        strcpy(dest, getenv("HOMEDRIVE"));
-        strcat(dest, getenv("HOMEPATH"));
-        strcat(dest, "/.jddev0");
-        makeDirectory(dest);
-        strcat(dest, "/" CONFIG_PATH_FOLDER);
-        makeDirectory(dest);
-        strcat(dest, "/");
-    }
-
-    void sleepMS(unsigned int time) {
-        Sleep(time);
-    }
-
     void drawf(const char *restrict format, ...) {
         va_list args;
         va_start(args, format);
@@ -504,9 +469,3 @@
         rowTmp = y;
     }
 #endif
-
-static int arrowKeyStart = CL_KEY_LEFT - 1;
-static int arrowKeyEnd = CL_KEY_DOWN + 1;
-int isArrowKey(int key) {
-    return key > arrowKeyStart && key < arrowKeyEnd;
-}

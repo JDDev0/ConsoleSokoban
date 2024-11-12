@@ -1,0 +1,10 @@
+[package]
+build = "build.rs"
+name = "console_lib"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[build-dependencies]
+cmake = "0.1.51"

@@ -1,0 +1,10 @@
+[workspace]
+members = ["console_lib"]
+
+[package]
+name = "ConsoleSokoban"
+version = "2.0.0-dev"
+edition = "2021"
+
+[dependencies]
+console_lib = { version = "0.1.0", path = "console_lib" }
