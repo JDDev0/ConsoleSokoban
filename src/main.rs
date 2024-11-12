@@ -10,7 +10,7 @@ fn main() -> ExitCode {
     let console = Console::new().unwrap();
 
     let game = Game::new(&console);
-    let game = match game {
+    let mut game = match game {
         Ok(game) => game,
         Err(err) => {
             drop(console);

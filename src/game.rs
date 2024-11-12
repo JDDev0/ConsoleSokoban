@@ -1,5 +1,4 @@
 use console_lib::{keys, Console};
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::error::Error;
 use std::ffi::OsString;
@@ -121,10 +120,10 @@ impl GameState {
 pub struct Game<'a> {
     console: &'a Console<'a>,
 
-    screens: HashMap<ScreenId, RefCell<Box<dyn Screen>>>,
-    help_page: RefCell<HelpPage>,
+    screens: HashMap<ScreenId, Box<dyn Screen>>,
+    help_page: HelpPage,
 
-    game_state: RefCell<GameState>,
+    game_state: GameState,
 }
 
 impl <'a> Game<'a> {
@@ -180,7 +179,7 @@ impl <'a> Game<'a> {
             (ScreenId::SelectLevelPack, Box::new(ScreenSelectLevelPack::new()) as Box<dyn Screen>),
             (ScreenId::SelectLevel, Box::new(ScreenSelectLevel::new()) as Box<dyn Screen>),
             (ScreenId::InGame, Box::new(ScreenInGame::new()) as Box<dyn Screen>),
-        ].into_iter().map(|(k, v)| (k, RefCell::new(v))));
+        ]);
 
         let mut level_packs = Vec::with_capacity(LevelPack::MAX_LEVEL_PACK_COUNT);
         level_packs.append(&mut vec![
@@ -208,75 +207,71 @@ impl <'a> Game<'a> {
             console,
 
             screens,
-            help_page: RefCell::new(HelpPage::new()),
+            help_page: HelpPage::new(),
 
-            game_state: RefCell::new(GameState::new(level_packs)),
+            game_state: GameState::new(level_packs),
         })
     }
 
     #[must_use]
-    pub fn update(&self) -> bool {
-        let game_state = &mut *self.game_state.borrow_mut();
-
-        if game_state.should_exit {
+    pub fn update(&mut self) -> bool {
+        if self.game_state.should_exit {
             return true;
         }
 
         if self.console.has_input() {
-            self.update_key(game_state, self.console.get_key());
+            self.update_key(self.console.get_key());
         }
 
-        self.update_mouse(game_state);
+        self.update_mouse();
 
-        if !game_state.is_help {
-            let screen = self.screens.get(&game_state.current_screen_id);
+        if !self.game_state.is_help {
+            let screen = self.screens.get_mut(&self.game_state.current_screen_id);
             if let Some(screen) = screen {
-                let mut screen = screen.borrow_mut();
-
-                if mem::replace(&mut game_state.should_call_on_set_screen, false) {
-                    screen.on_set_screen(game_state);
+                if mem::replace(&mut self.game_state.should_call_on_set_screen, false) {
+                    screen.on_set_screen(&mut self.game_state);
                 }
 
-                screen.update(game_state);
+                screen.update(&mut self.game_state);
             }
         }
 
         //Player background
-        game_state.player_background_tmp += 1;
-        if game_state.player_background_tmp >= Self::PLAYER_BACKGROUND_DELAY + game_state.is_player_background as i32 {
+        self.game_state.player_background_tmp += 1;
+        if self.game_state.player_background_tmp >= Self::PLAYER_BACKGROUND_DELAY + self.game_state.is_player_background as i32 {
             //If isPlayerBackground: wait an additional update (25 updates per second, every half
             //second: switch background/foreground colors [12 updates, 13 updates])
-            game_state.player_background_tmp = 0;
-            game_state.is_player_background = !game_state.is_player_background;
+            self.game_state.player_background_tmp = 0;
+            self.game_state.is_player_background = !self.game_state.is_player_background;
         }
 
-        self.draw(game_state);
+        self.draw();
 
         false
     }
 
-    fn update_key(&self, game_state: &mut GameState, key: i32) {
-        let screen = self.screens.get(&game_state.current_screen_id);
-        if game_state.is_help {
+    fn update_key(&mut self, key: i32) {
+        let screen = self.screens.get_mut(&mut self.game_state.current_screen_id);
+        if self.game_state.is_help {
             if key == keys::F1 || key == keys::ESC {
-                game_state.close_help_page();
+                self.game_state.close_help_page();
 
                 if let Some(screen) = screen {
-                    screen.borrow_mut().on_continue(game_state);
+                    screen.on_continue(&mut self.game_state);
                 }
             }else {
-                self.help_page.borrow_mut().on_key_pressed(key);
+                self.help_page.on_key_pressed(key);
             }
 
             return;
         }
 
         if let Some(screen) = screen {
-            screen.borrow_mut().on_key_pressed(game_state, key);
+            screen.on_key_pressed(&mut self.game_state, key);
         }
     }
 
-    fn update_mouse(&self, game_state: &mut GameState) {
+    fn update_mouse(&mut self) {
         let (column, row) = self.console.get_mouse_pos_clicked();
         if column < 0 || row < 0 {
             return;
@@ -284,20 +279,20 @@ impl <'a> Game<'a> {
 
         let (column, row) = (column as usize, row as usize);
 
-        if game_state.is_help {
-            self.help_page.borrow_mut().on_mouse_pressed(Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT, column, row);
+        if self.game_state.is_help {
+            self.help_page.on_mouse_pressed(Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT, column, row);
 
             return;
         }
 
         let yes_no;
-        if let Some(dialog) = game_state.dialog.as_ref() {
+        if let Some(dialog) = self.game_state.dialog.as_ref() {
             yes_no = dialog.on_mouse_pressed(Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT, column, row);
         }else {
             yes_no = None;
         }
         if let Some(yes_no) = yes_no {
-            self.update_key(game_state, if yes_no {
+            self.update_key(if yes_no {
                 b'y' as i32
             }else {
                 b'n' as i32
@@ -306,27 +301,27 @@ impl <'a> Game<'a> {
             return;
         }
 
-        let screen = self.screens.get(&game_state.current_screen_id);
+        let screen = self.screens.get_mut(&self.game_state.current_screen_id);
         if let Some(screen) = screen {
-            screen.borrow_mut().on_mouse_pressed(game_state, column, row);
+            screen.on_mouse_pressed(&mut self.game_state, column, row);
         }
     }
 
-    fn draw(&self, game_state: &GameState) {
+    fn draw(&self) {
         self.console.repaint();
 
-        if game_state.is_help {
-            self.help_page.borrow().draw(self.console, Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT);
+        if self.game_state.is_help {
+            self.help_page.draw(self.console, Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT);
 
             return;
         }
 
-        let screen = self.screens.get(&game_state.current_screen_id);
+        let screen = self.screens.get(&self.game_state.current_screen_id);
         if let Some(screen) = screen {
-            screen.borrow().draw(game_state, self.console);
+            screen.draw(&self.game_state, self.console);
         }
 
-        if let Some(dialog) = game_state.dialog.as_ref() {
+        if let Some(dialog) = self.game_state.dialog.as_ref() {
             dialog.draw(self.console, Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT);
         }
     }
