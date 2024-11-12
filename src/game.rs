@@ -12,7 +12,7 @@ mod level;
 mod screen;
 mod help_page;
 
-pub struct GameState {
+struct GameState {
     current_screen_id: ScreenId,
     should_call_on_set_screen: bool,
 
