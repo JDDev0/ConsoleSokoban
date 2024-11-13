@@ -382,11 +382,11 @@ impl Screen for ScreenSelectLevelPack {
 
                 keys::ENTER => {
                     //Set selected level
-                    if game_state.get_current_level_pack().as_ref().unwrap().min_level_not_completed() ==
-                            game_state.get_current_level_pack().as_ref().unwrap().level_count() {
+                    let min_level_not_completed = game_state.get_current_level_pack().as_ref().unwrap().min_level_not_completed();
+                    if min_level_not_completed >= game_state.get_current_level_pack().as_ref().unwrap().level_count() {
                         game_state.set_level_index(0);
                     }else {
-                        game_state.set_level_index(game_state.get_current_level_pack().as_ref().unwrap().min_level_not_completed());
+                        game_state.set_level_index(min_level_not_completed);
                     }
 
                     game_state.set_screen(ScreenId::SelectLevel);
@@ -635,7 +635,6 @@ pub struct ScreenInGame {
     level_now_last_step: Option<Level>,
 
     continue_flag: bool,
-    continue_level_add_flag: bool,
     secret_found_flag: bool,
     game_over_flag: bool,
 }
@@ -659,7 +658,6 @@ impl ScreenInGame {
             level_now_last_step: Default::default(),
 
             continue_flag: Default::default(),
-            continue_level_add_flag: Default::default(),
             secret_found_flag: Default::default(),
             game_over_flag: Default::default(),
         }
@@ -938,7 +936,6 @@ impl Screen for ScreenInGame {
                 game_state.close_dialog();
 
                 self.continue_flag = false;
-                self.continue_level_add_flag = false;
                 self.game_over_flag = false;
                 self.secret_found_flag = false;
 
@@ -951,7 +948,6 @@ impl Screen for ScreenInGame {
                 game_state.close_dialog();
 
                 self.continue_flag = false;
-                self.continue_level_add_flag = false;
                 self.game_over_flag = false;
 
                 game_state.set_screen(ScreenId::SelectLevel);
@@ -967,7 +963,6 @@ impl Screen for ScreenInGame {
         if key == keys::ESC {
             if self.game_over_flag {
                 self.continue_flag = false;
-                self.continue_level_add_flag = false;
                 self.game_over_flag = false;
 
                 game_state.set_screen(ScreenId::SelectLevel);
@@ -997,14 +992,6 @@ impl Screen for ScreenInGame {
 
         //Level end
         if self.continue_flag {
-            if self.continue_level_add_flag {
-                if current_level_index >= level_pack.min_level_not_completed() {
-                    level_pack.set_min_level_not_completed(current_level_index + 1);
-                }
-
-                self.continue_level_add_flag = false;
-            }
-
             if key == keys::ENTER {
                 self.continue_flag = false;
 
@@ -1165,13 +1152,16 @@ impl Screen for ScreenInGame {
 
             if has_won {
                 self.continue_flag = true;
-                self.continue_level_add_flag = true;
 
                 //Update best scores
                 let time = self.time_millis as u64 + 1000 * self.time_sec as u64 + 60000 * self.time_min as u64;
                 let moves = self.moves;
 
                 level_pack.update_stats(current_level_index, time, moves);
+
+                if current_level_index >= level_pack.min_level_not_completed() {
+                    level_pack.set_min_level_not_completed(current_level_index + 1);
+                }
 
                 //TODO replace with error popup
                 level_pack.save_save_game().expect("Can not save save game");

@@ -467,10 +467,10 @@ impl LevelPack {
                 let level = Level::from_str(&level_str.join("\n"));
                 match level {
                     Ok(level) => levels.push(level),
-                    Err(error) => {
+                    Err(err) => {
                         return Err(Box::new(LevelLoadingError::new(format!(
                             "\"{}\" occurred during parsing of level {} is invalid in the level pack file \"{path}\"!",
-                            error, i + 1
+                            err, i + 1
                         ))));
                     },
                 }

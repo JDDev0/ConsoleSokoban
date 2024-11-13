@@ -4,6 +4,9 @@ use std::error::Error;
 use std::ffi::OsString;
 use std::fmt::{Debug, Display, Formatter};
 use std::mem;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 use crate::game::help_page::HelpPage;
 use crate::game::level::LevelPack;
 use crate::game::screen::{Dialog, Screen, ScreenId, ScreenInGame, ScreenSelectLevel, ScreenSelectLevelPack, ScreenStartMenu};
@@ -189,7 +192,52 @@ impl <'a> Game<'a> {
             LevelPack::read_from_save_game("demon", "build-in:demon", Self::MAP_DEMON)?,
         ]);
 
-        //TODO load level packs from command line arguments
+        for arg in std::env::args().
+                skip(1) {
+            if !arg.ends_with(".lvl") {
+                return Err(Box::new(GameError::new(format!(
+                    "Invalid level pack \"{}\": The file extension of level pack must be \".lvl\"",
+                    arg
+                ))));
+            }
+
+            let level_pack_path = Path::new(&arg);
+
+            let level_pack_file_name = if let Some(file_name) = level_pack_path.file_name() {
+                if let Some(file_name) = file_name.to_str() {
+                    file_name
+                }else {
+                    return Err(Box::new(GameError::new(format!(
+                        "Error while loading level pack \"{}\": Invalid file name",
+                        arg
+                    ))));
+                }
+            }else {
+                return Err(Box::new(GameError::new(format!(
+                    "Error while loading level pack \"{}\": File name is missing",
+                    arg
+                ))));
+            };
+
+            let mut level_pack_file = match File::open(level_pack_path) {
+                Ok(file) => file,
+                Err(err) => return Err(Box::new(GameError::new(format!(
+                    "Error while loading level pack \"{}\": {}",
+                    arg, err
+                )))),
+            };
+
+            let mut level_pack_data = String::new();
+            if let Err(err) = level_pack_file.read_to_string(&mut level_pack_data) {
+                return Err(Box::new(GameError::new(format!(
+                    "Error while loading level pack \"{}\": {}",
+                    arg, err
+                ))));
+            };
+
+            let level_pack_id = &level_pack_file_name[..level_pack_file_name.len() - 4];
+            level_packs.push(LevelPack::read_from_save_game(level_pack_id, &arg, level_pack_data)?);
+        }
 
         //TODO check if any level is too large
         /*
