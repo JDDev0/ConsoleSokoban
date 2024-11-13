@@ -9,7 +9,6 @@
     #include <curses.h>
     #include <unistd.h>
     #include <inttypes.h>
-    #include <sys/stat.h>
 
     static int TMP_KEY_F0 = CL_KEY_F1 - 1;
     static int columnTmp, rowTmp, columns, rows;
@@ -243,10 +242,10 @@
     static HANDLE hConsole;
     static CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
     static WORD savedAttributes;
-    static CHAR_INFO *textBuf;
+    static CHAR_INFO *textBuf = NULL;
     static CHAR_INFO emptyChar;
     static WORD color;
-    static char *tmpBuf;
+    static char *tmpBuf = NULL;
     static int columns, rows;
     //Copy ASCII-Chars without color to CHAR_INFO[]
     static int columnTmp = 0, rowTmp = 0;
@@ -295,9 +294,16 @@
         clrscr();
         resetColor();
         SetConsoleTextAttribute(hConsole, savedAttributes);
-        //Reset text draw
-        free(tmpBuf);
-        free(textBuf);
+
+        if(tmpBuf) {
+            free(tmpBuf);
+            tmpBuf = NULL;
+        }
+
+        if(textBuf) {
+            free(textBuf);
+            textBuf = NULL;
+        }
     }
 
     void getConsoleSize(int *columnsRet, int *rowsRet) {
