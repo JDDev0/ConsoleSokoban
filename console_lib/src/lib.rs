@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::ffi::c_int;
 use std::fmt::{Display, Formatter};
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Mutex, MutexGuard, Once};
 
 mod bindings {
     use std::ffi::{c_char, c_int};
@@ -67,6 +67,7 @@ pub struct Console<'a> {
 }
 
 static CONSOLE_MUTEX: Mutex<()> = Mutex::new(());
+static CONSOLE_PANIC_HOOK: Once = Once::new();
 
 impl Console<'_> {
     pub fn new() -> Result<Self, Box<ConsoleError>> {
@@ -81,15 +82,17 @@ impl Console<'_> {
 
         #[cfg(feature = "custom_panic_hook")]
         {
-            let default_panic_hook = std::panic::take_hook();
-            std::panic::set_hook(Box::new(move |panic_info| {
-                //Reset Console before printing panic message if console was initialized (= CONSOLE_MUTEX is locked)
-                if CONSOLE_MUTEX.try_lock().is_err() {
-                    unsafe { bindings::reset() };
-                }
+            CONSOLE_PANIC_HOOK.call_once(|| {
+                let default_panic_hook = std::panic::take_hook();
+                std::panic::set_hook(Box::new(move |panic_info| {
+                    //Reset Console before printing panic message if console was initialized (= CONSOLE_MUTEX is locked)
+                    if CONSOLE_MUTEX.try_lock().is_err() {
+                        unsafe { bindings::reset() };
+                    }
 
-                default_panic_hook(panic_info);
-            }));
+                    default_panic_hook(panic_info);
+                }));
+            });
         }
 
         Ok(Self { _lock: lock })
