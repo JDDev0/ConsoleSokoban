@@ -79,6 +79,19 @@ impl Console<'_> {
 
         unsafe { bindings::initConsole() };
 
+        #[cfg(feature = "custom_panic_hook")]
+        {
+            let default_panic_hook = std::panic::take_hook();
+            std::panic::set_hook(Box::new(move |panic_info| {
+                //Reset Console before printing panic message if console was initialized (= CONSOLE_MUTEX is locked)
+                if CONSOLE_MUTEX.try_lock().is_err() {
+                    unsafe { bindings::reset() };
+                }
+
+                default_panic_hook(panic_info);
+            }));
+        }
+
         Ok(Self { _lock: lock })
     }
 
@@ -142,6 +155,12 @@ impl Console<'_> {
 
 impl Drop for Console<'_> {
     fn drop(&mut self) {
+        #[cfg(feature = "custom_panic_hook")]
+        if std::thread::panicking() {
+            //Custom panic hook will call "reset()" instead of this Drop implementation
+            return;
+        }
+
         unsafe { bindings::reset() };
     }
 }

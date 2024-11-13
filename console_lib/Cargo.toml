@@ -8,3 +8,6 @@ edition = "2021"
 
 [build-dependencies]
 cmake = "0.1.51"
+
+[features]
+custom_panic_hook = []
