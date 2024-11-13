@@ -48,7 +48,7 @@
         getConsoleSize(&columns, &rows);
 
         //Init drawBuf
-        drawBuf = malloc(sizeof(char)*(size_t)(columns * rows));
+        drawBuf = malloc(sizeof(char)*(size_t)(columns * rows + 1));
 
         //Force clear screen after init
         clear();
@@ -76,7 +76,7 @@
     }
 
     int hasInput(void) {
-        int ch = wgetch(stdscr);
+        const int ch = wgetch(stdscr);
 
         if(ch == ERR)
             return 0;
@@ -89,7 +89,7 @@
         return 1;
     }
     int getKey(void) {
-        int ch = wgetch(stdscr);
+        const int ch = wgetch(stdscr);
 
         if(ch == KEY_MOUSE) {
             ungetch(ch);
@@ -124,6 +124,9 @@
                 return CL_KEY_DELETE;
             case '\n':
                 return CL_KEY_ENTER;
+
+            default:
+                break;
         }
         //F1 - F12
         for(int i = 1;i < 13;i++) {
@@ -136,7 +139,7 @@
     }
 
     void getMousePosClicked(int *column, int *row) {
-        int ch = wgetch(stdscr);
+        const int ch = wgetch(stdscr);
         if(ch == KEY_MOUSE) {
             if(getmouse(mev) == OK) {
                 if(mev->bstate&BUTTON1_PRESSED) {
@@ -159,7 +162,7 @@
 
         int start = 0;
         int startColumn = columnTmp;
-        int len = (int)strlen(drawBuf);
+        const size_t len = strlen(drawBuf);
         for(int i = 0;i < len;i++) {
             columnTmp++;
             if(drawBuf[i] == '\n') {
@@ -184,7 +187,7 @@
         COLOR_BLACK, COLOR_BLUE, COLOR_GREEN, COLOR_CYAN, COLOR_RED,
         COLOR_MAGENTA, COLOR_YELLOW, COLOR_WHITE
     };
-    void setColor(int fg, int bg) {
+    void setColor(const int fg, const int bg) {
         if(fg < -1 || fg > 15 || bg < -1 || bg > 15) {
             return;
         }
@@ -195,8 +198,7 @@
         int fgID = (fg == -1?-1:fg&7) + 1;
         int bgID = (bg == -1?-1:bg&7) + 1;
         if(colorIDMap[fgID][bgID]&1) {
-            attron(COLOR_PAIR((((colorIDMap[fgID][bgID] - 1) >> 1)&127) + 1)|
-            ((fg&8||bg&8)?(A_BOLD):0));
+            attron(COLOR_PAIR(((colorIDMap[fgID][bgID] - 1 >> 1) & 127) + 1) | (fg&8||bg&8?(A_BOLD):0));
         }else {
             short fgCol;
             if(fg == -1) {
@@ -223,14 +225,14 @@
         attroff(A_COLOR|A_BOLD);
     }
 
-    void setUnderline(int underline) {
+    void setUnderline(const int underline) {
         if(underline)
             attron(A_UNDERLINE);
         else
             attroff(A_UNDERLINE);
     }
 
-    void setCursorPos(int x, int y) {
+    void setCursorPos(const int x, const int y) {
         columnTmp = x;
         rowTmp = y;
     }
@@ -257,8 +259,8 @@
     void clrscr(void) { //Draw and clear buffer after for next round
         textBuf[rows*columns].Char.AsciiChar = '\0';
         columnTmp = rowTmp = 0;
-        COORD pos = {0, 0};
-        COORD size = {(SHORT)columns, (SHORT)rows};
+        const COORD pos = {0, 0};
+        const COORD size = {(SHORT)columns, (SHORT)rows};
         SMALL_RECT windowBounds = {0, 0, (SHORT)(columns-1), (SHORT)(rows-1)};
         WriteConsoleOutputA(hConsole, textBuf, size, pos, &windowBounds);
 
@@ -315,11 +317,11 @@
         return _kbhit();
     }
     int getKey(void) {
-        int ch = _getch();
+        const int ch = _getch();
 
         //Arrow keys + F11 - F12
         if(ch == 224) {
-            int chTmp = _getch();
+            const int chTmp = _getch();
             switch(chTmp) {
                 //Arrow keys
                 case 72:
@@ -335,11 +337,14 @@
                     return CL_KEY_F11;
                 case 134:
                     return CL_KEY_F12;
+
+                default:
+                    break;
             }
         }
         //Function key
         if(ch == 0) {
-            int chTmp = _getch();
+            const int chTmp = _getch();
             //F1 - F10
             for(int i = 0;i < 10;i++) {
                 if(chTmp == 59 + i) {
@@ -355,6 +360,9 @@
                 return CL_KEY_DELETE;
             case VK_RETURN:
                 return CL_KEY_ENTER;
+
+            default:
+                break;
         }
 
         return tolower(ch);
@@ -379,6 +387,9 @@
                         }
 
                         break;
+
+                    default:
+                        break;
                 }
             }
         }
@@ -393,7 +404,7 @@
         vsprintf(tmpBuf, format, args);
 
         //Copy to textBuf
-        signed len = (signed)strlen(tmpBuf);
+        const signed len = (signed)strlen(tmpBuf);
         for(int i = 0;i < len;i++) {
             if(tmpBuf[i] == '\n') {
                 rowTmp++;
@@ -409,21 +420,22 @@
         va_end(args);
     }
 
-    void setColor(int fg, int bg) {
+    void setColor(const int fg, const int bg) {
         if(fg < -1 || fg > 15 || bg < -1 || bg > 15) {
             return;
         }
 
-        int rFG, gFG, bFG, aFG; //a: {"alpha": 0: dark, 1: light}
-        aFG = (fg>>3)%2;
-        rFG = (fg>>2)%2;
-        gFG = (fg>>1)%2;
-        bFG = fg%2;
-        int rBG, gBG, bBG, aBG; //a: {"alpha": 0: dark, 1: light}
-        aBG = (bg>>3)%2;
-        rBG = (bg>>2)%2;
-        gBG = (bg>>1)%2;
-        bBG = bg%2;
+        //a: {"alpha": 0: dark, 1: light}
+        const int aFG = (fg>>3)%2;
+        const int rFG = (fg>>2)%2;
+        const int gFG = (fg>>1)%2;
+        const int bFG = fg%2;
+
+        //a: {"alpha": 0: dark, 1: light}
+        const int aBG = (bg>>3)%2;
+        const int rBG = (bg>>2)%2;
+        const int gBG = (bg>>1)%2;
+        const int bBG = bg%2;
 
         //Reset color
         color = 0;
@@ -468,9 +480,9 @@
         color = savedAttributes;
     }
 
-    void setUnderline(int underline) {}
+    void setUnderline(const int underline) {}
 
-    void setCursorPos(int x, int y) {
+    void setCursorPos(const int x, const int y) {
         columnTmp = x;
         rowTmp = y;
     }

@@ -1,9 +1,5 @@
 #ifndef CONSOLE_LIB_H
 #define CONSOLE_LIB_H
-    #define CONSOLE_LIB_VER "v0.0.1"
-
-    #define CONFIG_PATH_FOLDER "ConsoleSokoban"
-
     //Keys
     //Arrow keys
     #define CL_KEY_LEFT   5000
