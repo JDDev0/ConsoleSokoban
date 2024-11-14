@@ -23,6 +23,7 @@
     #define CL_KEY_ESC    5016
     #define CL_KEY_DELETE 5017
     #define CL_KEY_ENTER  5018
+    #define CL_KEY_TAB    5019
 
     void clrscr(void);
 

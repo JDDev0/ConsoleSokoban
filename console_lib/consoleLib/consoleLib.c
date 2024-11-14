@@ -124,6 +124,8 @@
                 return CL_KEY_DELETE;
             case '\n':
                 return CL_KEY_ENTER;
+            case '\t':
+                return CL_KEY_TAB;
 
             default:
                 break;
@@ -360,6 +362,8 @@
                 return CL_KEY_DELETE;
             case VK_RETURN:
                 return CL_KEY_ENTER;
+            case VK_TAB:
+                return CL_KEY_TAB;
 
             default:
                 break;

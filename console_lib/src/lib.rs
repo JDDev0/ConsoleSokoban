@@ -56,6 +56,7 @@ pub mod keys {
     pub const ESC: i32 = 5016;
     pub const DELETE: i32 = 5017;
     pub const ENTER: i32 = 5018;
+    pub const TAB: i32 = 5019;
 }
 
 pub fn is_arrow_key(key: i32) -> bool {
