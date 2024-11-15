@@ -37,7 +37,7 @@
 
     void getMousePosClicked(int *column, int *row);
 
-    void drawf(const char *restrict format, ...);
+    void drawText(const char *text);
 
     enum consoleLibColor {
         CL_COLOR_BLACK, CL_COLOR_BLUE, CL_COLOR_GREEN, CL_COLOR_CYAN, CL_COLOR_RED,

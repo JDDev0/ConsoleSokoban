@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
 #include "consoleLib.h"
@@ -12,7 +11,6 @@
 
     static int TMP_KEY_F0 = CL_KEY_F1 - 1;
     static int columnTmp, rowTmp, columns, rows;
-    static char *drawBuf = NULL;
     static MEVENT *mev = NULL;
     static uint16_t colorIDMap[9][9]; //[FG][BG][Bit(0): hasColor, Bit(1 - 8): ID]
     static short lastColorPairID = 1;
@@ -45,10 +43,7 @@
         mev = malloc(sizeof(MEVENT));
 
         //Get console size for draw
-        getConsoleSize(&columns, &rows);
-
-        //Init drawBuf
-        drawBuf = malloc(sizeof(char)*(size_t)(columns * rows + 1));
+        getmaxyx(stdscr, rows, columns);
 
         //Force clear screen after init
         clear();
@@ -57,11 +52,6 @@
         clrscr();
         resetColor();
         setUnderline(0);
-
-        if(drawBuf) {
-            free(drawBuf);
-            drawBuf = NULL;
-        }
 
         if(mev) {
             free(mev);
@@ -72,7 +62,8 @@
     }
 
     void getConsoleSize(int *columnsRet, int *rowsRet) {
-        getmaxyx(stdscr, *rowsRet, *columnsRet);
+        *columnsRet = columns;
+        *rowsRet = rows;
     }
 
     int hasInput(void) {
@@ -157,20 +148,16 @@
         *row = -1;
     }
 
-    void drawf(const char *restrict format, ...) {
-        va_list args;
-        va_start(args, format);
-        vsprintf(drawBuf, format, args);
-
+    void drawText(const char *text) {
         int start = 0;
         int startColumn = columnTmp;
-        const size_t len = strlen(drawBuf);
+        const size_t len = strlen(text);
         for(int i = 0;i < len;i++) {
             columnTmp++;
-            if(drawBuf[i] == '\n') {
+            if(text[i] == '\n') {
                 //Draw line
                 //Remove '\n'
-                mvaddnstr(rowTmp, startColumn, drawBuf + start, i - start);
+                mvaddnstr(rowTmp, startColumn, text + start, i - start);
 
                 rowTmp++;
                 startColumn = columnTmp = 0;
@@ -179,10 +166,8 @@
         }
         if(len > (size_t)start) {
             //Draw str without '\n'
-            mvaddstr(rowTmp, startColumn, drawBuf + start);
+            mvaddstr(rowTmp, startColumn, text + start);
         }
-
-        va_end(args);
     }
 
     static int colorCodes[] = {
@@ -249,7 +234,6 @@
     static CHAR_INFO *textBuf = NULL;
     static CHAR_INFO emptyChar;
     static WORD color;
-    static char *tmpBuf = NULL;
     static int columns, rows;
     //Copy ASCII-Chars without color to CHAR_INFO[]
     static int columnTmp = 0, rowTmp = 0;
@@ -287,8 +271,6 @@
         rows = consoleInfo.srWindow.Bottom - consoleInfo.srWindow.Top + 1;
         textBuf = malloc((unsigned)(columns*rows + 1)*sizeof(textBuf[0]));
         memset(textBuf, 0, (unsigned)(columns*rows + 1)*sizeof(textBuf[0]));
-        tmpBuf = malloc((unsigned)(columns*rows + 1)*sizeof(tmpBuf[0]));
-        memset(tmpBuf, 0, (unsigned)(columns*rows + 1)*sizeof(tmpBuf[0]));
         //Init mouse input
         hInConsole = GetStdHandle(STD_INPUT_HANDLE);
         SetConsoleMode(hInConsole, ENABLE_EXTENDED_FLAGS|ENABLE_WINDOW_INPUT|
@@ -298,11 +280,6 @@
         clrscr();
         resetColor();
         SetConsoleTextAttribute(hConsole, savedAttributes);
-
-        if(tmpBuf) {
-            free(tmpBuf);
-            tmpBuf = NULL;
-        }
 
         if(textBuf) {
             free(textBuf);
@@ -402,26 +379,28 @@
         *row = -1;
     }
 
-    void drawf(const char *restrict format, ...) {
-        va_list args;
-        va_start(args, format);
-        vsprintf(tmpBuf, format, args);
-
+    void drawText(const char *text) {
         //Copy to textBuf
-        const signed len = (signed)strlen(tmpBuf);
+        const signed len = (signed)strlen(text);
         for(int i = 0;i < len;i++) {
-            if(tmpBuf[i] == '\n') {
+            if(text[i] == '\n') {
                 rowTmp++;
                 columnTmp = 0;
 
                 continue;
             }
-            textBuf[rowTmp*columns + columnTmp].Char.AsciiChar = tmpBuf[i];
+
+            if(rowTmp*columns + columnTmp > columns*rows + 1) {
+                //Prevent out of bounds write
+
+                break;
+            }
+
+            textBuf[rowTmp*columns + columnTmp].Char.AsciiChar = text[i];
             textBuf[rowTmp*columns + columnTmp].Attributes = color;
 
             columnTmp++;
         }
-        va_end(args);
     }
 
     void setColor(const int fg, const int bg) {
@@ -442,7 +421,7 @@
         const int bBG = bg%2;
 
         //Reset color
-        color = 0;
+        color = color & ~(BACKGROUND_INTENSITY|BACKGROUND_RED|BACKGROUND_GREEN|BACKGROUND_BLUE);
 
         //Set color
         if(fg != -1) {
@@ -459,8 +438,7 @@
                 color |= FOREGROUND_BLUE;
             }
         }else { //Foreground color from savedAttributes
-            color |= savedAttributes & (FOREGROUND_INTENSITY|FOREGROUND_RED|
-                                        FOREGROUND_GREEN|FOREGROUND_BLUE);
+            color |= savedAttributes & (FOREGROUND_INTENSITY|FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_BLUE);
         }
         if(bg != -1) {
             if(aBG) {
@@ -476,15 +454,20 @@
                 color |= BACKGROUND_BLUE;
             }
         }else { //Background color from savedAttributes
-            color |= savedAttributes & (BACKGROUND_INTENSITY|BACKGROUND_RED|
-                                        BACKGROUND_GREEN|BACKGROUND_BLUE);
+            color |= savedAttributes & (BACKGROUND_INTENSITY|BACKGROUND_RED|BACKGROUND_GREEN|BACKGROUND_BLUE);
         }
     }
     void resetColor(void) {
         color = savedAttributes;
     }
 
-    void setUnderline(const int underline) {}
+    void setUnderline(const int underline) {
+        if(underline) {
+            color |= COMMON_LVB_UNDERSCORE;
+        }else {
+            color = color & ~COMMON_LVB_UNDERSCORE;
+        }
+    }
 
     void setCursorPos(const int x, const int y) {
         columnTmp = x;

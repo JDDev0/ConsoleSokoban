@@ -19,7 +19,7 @@ mod bindings {
 
         pub fn getMousePosClicked(column: *mut c_int, row: *mut c_int);
 
-        pub fn drawf(format: *const c_char, value: *const c_char);
+        pub fn drawText(text: *const c_char);
 
         pub fn setColor(fg: c_int, bg: c_int);
         pub fn resetColor();
@@ -132,12 +132,9 @@ impl Console<'_> {
     }
 
     pub fn draw_text(&self, text: impl Into<String>) {
-        let format = std::ffi::CString::new("%s").unwrap();
         let text = std::ffi::CString::new(text.into()).unwrap();
 
-        //TODO bounds checks (if cursor pos + text byte count > buffer size -> panic)
-
-        unsafe { bindings::drawf(format.as_ptr(), text.as_ptr()) }
+        unsafe { bindings::drawText(text.as_ptr()) }
     }
 
     pub fn set_color(&self, fg: Color, bg: Color) {
