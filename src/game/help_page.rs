@@ -133,24 +133,21 @@ impl HelpPage {
 
     pub fn new() -> Self {
         let mut table_of_contents = TableOfContents::new();
-        table_of_contents.add_section("Control", 1);
+        table_of_contents.add_section("Controls", 1);
         table_of_contents.add_sub_section("Keyboard", 1);
         table_of_contents.add_sub_sub_section("Help menu", 1);
         table_of_contents.add_sub_sub_section("Exit window", 1);
         table_of_contents.add_sub_sub_section("Start menu", 1);
-        table_of_contents.add_sub_sub_section("Game control", 1);
+        table_of_contents.add_sub_sub_section("Game controls", 1);
         table_of_contents.add_sub_section("Mouse input", 2);
         table_of_contents.add_sub_sub_section("Help menu", 2);
         table_of_contents.add_sub_sub_section("Exit window", 2);
         table_of_contents.add_sub_sub_section("Start menu", 3);
         table_of_contents.add_section("Console arguments", 3);
-        table_of_contents.add_section("Menus", 4);
-        table_of_contents.add_sub_section("Help menu", 4);
-        table_of_contents.add_sub_section("Exit window", 4);
+        table_of_contents.add_section("Gameplay", 4);
         table_of_contents.add_sub_section("Game screen", 4);
-        table_of_contents.add_section("Gameplay", 5);
-        table_of_contents.add_sub_section("Play", 5);
-        table_of_contents.add_sub_section("Game over", 5);
+        table_of_contents.add_section("Editor", 5);
+        table_of_contents.add_sub_section("Editor Controls", 5);
 
         Self {
             table_of_contents,
@@ -171,7 +168,7 @@ impl HelpPage {
             },
             1 => {
                 console.set_color(Color::Blue, Color::Default);
-                console.draw_text("1 Control\n");
+                console.draw_text("1 Controls\n");
 
                 console.set_color(Color::Green, Color::Default);
                 console.draw_text("1.1 Keyboard\n");
@@ -240,7 +237,7 @@ impl HelpPage {
                 console.set_underline(true);
                 console.set_color(Color::Cyan, Color::Default);
                 console.set_cursor_pos(0, 17);
-                console.draw_text("1.1.4 Game control\n");
+                console.draw_text("1.1.4 Game controls\n");
 
                 console.set_underline(false);
                 console.set_color(Color::LightRed, Color::Default);
@@ -360,109 +357,66 @@ impl HelpPage {
             },
             4 => {
                 console.set_color(Color::Blue, Color::Default);
-                console.draw_text("3 Menus\n");
+                console.draw_text("3 Gameplay\n");
+
+                console.set_underline(false);
+
+                console.reset_color();
+                console.draw_text("Play the tutorial level pack for instructions.");
+
+                console.set_underline(true);
+
                 console.set_color(Color::Green, Color::Default);
-                console.draw_text("3.1 Help menu\n");
-
-                console.set_underline(false);
-                console.reset_color();
-                console.draw_text("\"Page: x of y\": x: (Current page), y: (Last page)\n\"");
-                console.set_color(Color::Blue, Color::Default);
-                console.set_underline(true);
-                console.draw_text("x Title");
-                console.set_underline(false);
-                console.reset_color();
-                console.draw_text("\":     Heading 1 (Chapter Name)\n\"");
-                console.set_color(Color::Green, Color::Default);
-                console.set_underline(true);
-                console.draw_text("x.x Title");
-                console.set_underline(false);
-                console.reset_color();
-                console.draw_text("\":   Heading 2 (Chapter.Chapter Name)\n\"");
-                console.set_color(Color::Cyan, Color::Default);
-                console.set_underline(true);
-                console.draw_text("x.x.x Title");
-                console.set_underline(false);
-                console.reset_color();
-                console.draw_text("\": Heading 3 (Chapter.Chapter.Chapter Name)\n");
-
-                console.set_underline(true);
-                console.set_color(Color::Green, Color::Default);
-                console.set_cursor_pos(0, 9);
-                console.draw_text("3.2 Exit window\n");
-
-                console.set_underline(false);
-                console.reset_color();
-                console.draw_text("Confirm exit\n");
-
-                console.set_underline(true);
-                console.set_color(Color::Green, Color::Default);
-                console.set_cursor_pos(0, 12);
-                console.draw_text("3.3 Game screen\n");
+                console.set_cursor_pos(0, 5);
+                console.draw_text("3.1 Game screen\n");
 
                 console.set_underline(false);
 
                 console.reset_color();
-                console.set_cursor_pos(1, 13);
+                console.set_cursor_pos(1, 6);
                 console.draw_text(
                     ": Empty\n       : One way doors\n : Wall\n : Player\n   : Box\n \
                     : Goal\n   : Key\n : Locked Door"
                 );
 
                 console.set_color(Color::LightBlue, Color::Default);
-                console.set_cursor_pos(0, 13);
+                console.set_cursor_pos(0, 6);
                 console.draw_text("-\n< ^ > v");
                 console.set_color(Color::LightGreen, Color::Default);
-                console.set_cursor_pos(0, 15);
+                console.set_cursor_pos(0, 8);
                 console.draw_text("#");
                 console.set_color(Color::Yellow, Color::Default);
-                console.set_cursor_pos(0, 16);
+                console.set_cursor_pos(0, 9);
                 console.draw_text("P");
                 console.set_color(Color::LightCyan, Color::Default);
-                console.set_cursor_pos(0, 17);
+                console.set_cursor_pos(0, 10);
                 console.draw_text("@");
                 console.set_color(Color::Pink, Color::Default);
-                console.set_cursor_pos(2, 17);
+                console.set_cursor_pos(2, 10);
                 console.draw_text("@");
                 console.set_color(Color::LightRed, Color::Default);
-                console.set_cursor_pos(0, 18);
+                console.set_cursor_pos(0, 11);
                 console.draw_text("x");
                 console.set_color(Color::LightCyan, Color::Default);
-                console.set_cursor_pos(0, 19);
+                console.set_cursor_pos(0, 12);
                 console.draw_text("*");
                 console.set_color(Color::Pink, Color::Default);
-                console.set_cursor_pos(2, 19);
+                console.set_cursor_pos(2, 12);
                 console.draw_text("*");
                 console.set_color(Color::LightRed, Color::Default);
-                console.set_cursor_pos(0, 20);
+                console.set_cursor_pos(0, 13);
                 console.draw_text("=");
             },
             5 => {
                 console.set_color(Color::Blue, Color::Default);
-                console.draw_text("4 Gameplay\n");
+                console.draw_text("4 Editor\n");
                 console.set_color(Color::Green, Color::Default);
-                console.draw_text("4.1 Game\n");
+                console.draw_text("4.1 Editor Controls\n");
 
                 console.set_underline(false);
-                console.reset_color();
-                console.draw_text("Move all boxes to the goals.");
 
-                console.set_underline(true);
-                console.set_color(Color::Green, Color::Default);
-                console.set_cursor_pos(0, 6);
-                console.draw_text("4.2 Game over\n");
-
-                console.set_underline(false);
                 console.reset_color();
-                console.draw_text("Press ");
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("ESC");
-                console.reset_color();
-                console.draw_text(" to left the game (See: ");
-                console.set_color(Color::Green, Color::Default);
-                console.draw_text("1.1 Keyboard");
-                console.reset_color();
-                console.draw_text(").");
+                console.draw_text("Work in progress"); //TODO
             },
             _ => {},
         }
