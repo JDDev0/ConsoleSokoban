@@ -209,7 +209,7 @@ impl <'a> Game<'a> {
     pub const CONSOLE_MIN_WIDTH: usize = 74;
     pub const CONSOLE_MIN_HEIGHT: usize = 23;
 
-    pub const MAX_LEVEL_PACK_ID_LEN: usize = 32;
+    pub const MAX_LEVEL_PACK_ID_LEN: usize = 16;
 
     const PLAYER_BACKGROUND_DELAY: i32 = 12;
 

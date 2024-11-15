@@ -228,13 +228,13 @@ impl Screen for ScreenSelectLevelPack {
 
         console.set_cursor_pos(0, y);
         console.set_color(Color::Cyan, Color::Default);
-        console.draw_text(".-----------------------------------.");
+        console.draw_text(".-------------------------------------.");
         for i in 1..4 {
             console.set_cursor_pos(0, y + i);
-            console.draw_text("|                                   |");
+            console.draw_text("|                                     |");
         }
         console.set_cursor_pos(0, y + 4);
-        console.draw_text("\'-----------------------------------\'");
+        console.draw_text("\'-------------------------------------\'");
         console.reset_color();
 
         if game_state.get_level_pack_index() == game_state.get_level_pack_count() {
@@ -244,9 +244,9 @@ impl Screen for ScreenSelectLevelPack {
         }else {
             //Draw sum of best time and sum of best moves
             console.set_cursor_pos(1, y + 1);
-            console.draw_text(format!("Selected level pack: {:>14}", game_state.level_packs().get(game_state.get_level_pack_index()).unwrap().id()));
+            console.draw_text(format!("Selected level pack: {:>16}", game_state.level_packs().get(game_state.get_level_pack_index()).unwrap().id()));
             console.set_cursor_pos(1, y + 2);
-            console.draw_text("Sum of best time   : ");
+            console.draw_text("Sum of best time   :   ");
             match game_state.get_current_level_pack().as_ref().unwrap().level_pack_best_time_sum() {
                 None => console.draw_text("X:XX:XX:XX.XXX"),
                 Some(best_time_sum) => {
@@ -261,7 +261,7 @@ impl Screen for ScreenSelectLevelPack {
                 },
             }
             console.set_cursor_pos(1, y + 3);
-            console.draw_text("Sum of best moves  :        ");
+            console.draw_text("Sum of best moves  :          ");
             match game_state.get_current_level_pack().as_ref().unwrap().level_pack_best_moves_sum() {
                 None => console.draw_text("XXXXXXX"),
                 Some(best_moves_sum) => console.draw_text(format!("{:07}", best_moves_sum)),
@@ -1233,7 +1233,14 @@ impl Screen for ScreenSelectLevelPackEditor {
                         return;
                     }
 
-                    //TODO check if does not already exist and open level pack editor
+                    for id in game_state.editor_state.level_packs.iter().
+                            map(|level_pack| level_pack.id()) {
+                        if id == self.new_level_pack_id {
+                            game_state.open_dialog(DialogOk::new_error(format!("The level pack with the ID \"{}\" already exists!", id)));
+
+                            return;
+                        }
+                    }
 
                     let Ok(mut save_game_file) = Game::get_or_create_save_game_folder() else {
                         game_state.open_dialog(DialogOk::new_error("Can not save!"));
