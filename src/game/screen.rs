@@ -4,7 +4,7 @@ use std::mem;
 use std::str::FromStr;
 use std::time::SystemTime;
 use dialog::DialogYesNo;
-use crate::game::{Game, GameState};
+use crate::game::{Game, GameError, GameState};
 use crate::game::level::{Level, LevelPack, Tile};
 use crate::game::screen::dialog::{DialogOk, DialogSelection};
 
@@ -1543,7 +1543,7 @@ impl Screen for ScreenLevelPackEditor {
 
                 keys::ENTER => {
                     if !(1..=2).contains(&self.new_level_width_str.len()) {
-                        game_state.open_dialog(DialogOk::new_error(format!("Width must be >= 3 and <= {}!", Game::CONSOLE_MIN_WIDTH)));
+                        game_state.open_dialog(DialogOk::new_error(format!("Width must be >= 3 and <= {}!", Game::LEVEL_MAX_WIDTH)));
 
                         return;
                     }
@@ -1554,14 +1554,14 @@ impl Screen for ScreenLevelPackEditor {
                         return;
                     };
 
-                    if !(3..=Game::CONSOLE_MIN_WIDTH).contains(&width) {
-                        game_state.open_dialog(DialogOk::new_error(format!("Width must be >= 3 and <= {}!", Game::CONSOLE_MIN_WIDTH)));
+                    if !(3..=Game::LEVEL_MAX_WIDTH).contains(&width) {
+                        game_state.open_dialog(DialogOk::new_error(format!("Width must be >= 3 and <= {}!", Game::LEVEL_MAX_WIDTH)));
 
                         return;
                     }
 
                     if !(1..=2).contains(&self.new_level_height_str.len()) {
-                        game_state.open_dialog(DialogOk::new_error(format!("Height must be >= 3 and <= {}!", Game::CONSOLE_MIN_WIDTH)));
+                        game_state.open_dialog(DialogOk::new_error(format!("Height must be >= 3 and <= {}!", Game::LEVEL_MAX_HEIGHT)));
 
                         return;
                     }
@@ -1572,8 +1572,8 @@ impl Screen for ScreenLevelPackEditor {
                         return;
                     };
 
-                    if !(3..Game::CONSOLE_MIN_HEIGHT).contains(&height) {
-                        game_state.open_dialog(DialogOk::new_error(format!("Height must be >= 3 and <= {}!", Game::CONSOLE_MIN_WIDTH)));
+                    if !(3..=Game::LEVEL_MAX_HEIGHT).contains(&height) {
+                        game_state.open_dialog(DialogOk::new_error(format!("Height must be >= 3 and <= {}!", Game::LEVEL_MAX_HEIGHT)));
 
                         return;
                     }
@@ -1918,6 +1918,17 @@ impl Screen for ScreenLevelEditor {
             self.playing_level = if self.playing_level.is_some() {
                 None
             }else {
+                let player_tile_count = self.level.as_ref().unwrap().tiles().iter().filter(|tile| **tile == Tile::Player).count();
+                if player_tile_count == 0 {
+                    game_state.open_dialog(DialogOk::new_error("Level does not contain a player tile!"));
+
+                    return;
+                }else if player_tile_count > 1 {
+                    game_state.open_dialog(DialogOk::new_error("Level contains too many player tiles!"));
+
+                    return;
+                }
+
                 'outer:
                 for i in 0..self.level.as_ref().unwrap().width() {
                     for j in 0..self.level.as_ref().unwrap().height() {
@@ -1930,9 +1941,6 @@ impl Screen for ScreenLevelEditor {
                         }
                     }
                 }
-
-                //TODO error if no player found
-                //TODO error if more than one player found
 
                 self.level.clone()
             };

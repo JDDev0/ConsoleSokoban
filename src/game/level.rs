@@ -178,6 +178,10 @@ impl Level {
     pub fn height(&self) -> usize {
         self.height
     }
+
+    pub fn tiles(&self) -> &[Tile] {
+        &self.tiles
+    }
     
     pub fn get_tile(&self, x: usize, y: usize) -> Option<&Tile> {
         self.tiles.get(x + y * self.width)
@@ -647,7 +651,7 @@ impl LevelPack {
         &self.path
     }
 
-    pub fn levels(&self) -> &Vec<LevelWithStats> {
+    pub fn levels(&self) -> &[LevelWithStats] {
         &self.levels
     }
 

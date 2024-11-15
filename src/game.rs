@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use crate::game::help_page::HelpPage;
-use crate::game::level::{Level, LevelPack};
+use crate::game::level::{Level, LevelPack, Tile};
 use crate::game::screen::{Screen, ScreenId, ScreenInGame, ScreenLevelEditor, ScreenLevelPackEditor, ScreenSelectLevel, ScreenSelectLevelPack, ScreenSelectLevelPackEditor, ScreenStartMenu};
 use crate::game::screen::dialog::Dialog;
 
@@ -124,7 +124,7 @@ impl GameState {
         self.should_call_on_set_screen = true;
     }
 
-    pub fn level_packs(&self) -> &Vec<LevelPack> {
+    pub fn level_packs(&self) -> &[LevelPack] {
         &self.level_packs
     }
 
@@ -208,6 +208,9 @@ impl <'a> Game<'a> {
 
     pub const CONSOLE_MIN_WIDTH: usize = 74;
     pub const CONSOLE_MIN_HEIGHT: usize = 23;
+
+    pub const LEVEL_MAX_WIDTH: usize = Self::CONSOLE_MIN_WIDTH;
+    pub const LEVEL_MAX_HEIGHT: usize = Self::CONSOLE_MIN_HEIGHT - 1;
 
     pub const MAX_LEVEL_PACK_ID_LEN: usize = 16;
 
@@ -330,21 +333,46 @@ impl <'a> Game<'a> {
             level_packs.push(LevelPack::read_from_save_game(level_pack_id, &arg, level_pack_data)?);
         }
 
-        //TODO check if any level is too large (Normal levels)
-        /*
-                //"height >=", 1st line: infos
-                if(width > gameMinWidth || height >= gameMinHeight) {
-                    reset();
-                    printf("Level is too large (Max: %d x %d) (Level: %d x %d)!\n", gameMinWidth,
-                    gameMinHeight - 1, width, height);
+        for level_pack in level_packs.iter() {
+            if level_pack.level_count() == 0 {
+                return Err(Box::new(GameError::new(format!(
+                    "Error while loading level pack \"{}\": Level pack contains no levels",
+                    level_pack.id()
+                ))));
+            }
 
-                    exit(EXIT_FAILURE);
+            for (i, level) in level_pack.levels().iter().
+                    map(|level| level.level()).
+                    enumerate() {
+                if level.width() > Self::LEVEL_MAX_WIDTH || level.height() > Self::LEVEL_MAX_HEIGHT {
+                    return Err(Box::new(GameError::new(format!(
+                        "Error while loading level pack \"{}\": Level {} is too large (Max: {}x{})",
+                        level_pack.id(),
+                        i + 1,
+                        Self::LEVEL_MAX_WIDTH,
+                        Self::LEVEL_MAX_HEIGHT,
+                    ))));
                 }
-         */
+
+                let player_tile_count = level.tiles().iter().filter(|tile| **tile == Tile::Player).count();
+                if player_tile_count == 0 {
+                    return Err(Box::new(GameError::new(format!(
+                        "Error while loading level pack \"{}\": Level {} does not contain a player tile",
+                        level_pack.id(),
+                        i + 1,
+                    ))));
+                }else if player_tile_count > 1 {
+                    return Err(Box::new(GameError::new(format!(
+                        "Error while loading level pack \"{}\": Level {} contains too many player tiles",
+                        level_pack.id(),
+                        i + 1,
+                    ))));
+                }
+            }
+        }
 
         let mut editor_level_packs = Vec::with_capacity(LevelPack::MAX_LEVEL_PACK_COUNT);
 
-        //TODO error handling (Add editor level pack to output)
         let save_game_folder = Game::get_or_create_save_game_folder()?;
         for entry in std::fs::read_dir(save_game_folder)?.
                 filter(|entry| entry.as_ref().
@@ -366,7 +394,7 @@ impl <'a> Game<'a> {
                 let mut level_pack_data = String::new();
                 if let Err(err) = level_pack_file.read_to_string(&mut level_pack_data) {
                     return Err(Box::new(GameError::new(format!(
-                        "Error while loading level pack \"{}\": {}",
+                        "Error while loading editor level pack \"{}\": {}",
                         file_name, err
                     ))));
                 };
@@ -375,17 +403,23 @@ impl <'a> Game<'a> {
             }
         }
 
-        //TODO check if any level is too large (Editor levels)
-        /*
-                //"height >=", 1st line: infos
-                if(width > gameMinWidth || height >= gameMinHeight) {
-                    reset();
-                    printf("Level is too large (Max: %d x %d) (Level: %d x %d)!\n", gameMinWidth,
-                    gameMinHeight - 1, width, height);
+        for level_pack in editor_level_packs.iter() {
+            //Level pack for editor might be empty and might contain no player tile
 
-                    exit(EXIT_FAILURE);
+            for (i, level) in level_pack.levels().iter().
+                    map(|level| level.level()).
+                    enumerate() {
+                if level.width() > Self::LEVEL_MAX_WIDTH || level.height() > Self::LEVEL_MAX_HEIGHT {
+                    return Err(Box::new(GameError::new(format!(
+                        "Error while loading editor level pack \"{}\": Level {} is too large (Max: {}x{})",
+                        level_pack.id(),
+                        i + 1,
+                        Self::LEVEL_MAX_WIDTH,
+                        Self::LEVEL_MAX_HEIGHT,
+                    ))));
                 }
-         */
+            }
+        }
 
         let mut game_state = GameState::new(level_packs, editor_level_packs);
 
