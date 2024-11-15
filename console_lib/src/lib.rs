@@ -178,6 +178,7 @@ impl Drop for Console<'_> {
 }
 
 #[repr(i8)]
+#[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum Color {
     Black,
     Blue,

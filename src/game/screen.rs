@@ -6,7 +6,7 @@ use std::time::SystemTime;
 use dialog::DialogYesNo;
 use crate::game::{Game, GameState};
 use crate::game::level::{Level, LevelPack, Tile};
-use crate::game::screen::dialog::DialogSelection;
+use crate::game::screen::dialog::{DialogOk, DialogSelection};
 
 pub mod dialog;
 
@@ -1042,15 +1042,16 @@ impl Screen for ScreenInGame {
                     level_pack.set_min_level_not_completed(current_level_index + 1);
                 }
 
-                //TODO replace with error popup
-                level_pack.save_save_game().expect("Can not save save game");
+                if let Err(err) = level_pack.save_save_game() {
+                    game_state.open_dialog(DialogOk::new_error(format!("Can not save: {}", err)));
+                }
             }
 
             if self.secret_found_flag {
-                game_state.open_dialog(DialogYesNo::new("You have found a secret!"));
+                game_state.open_dialog(DialogOk::new("You have found a secret!"));
 
                 if let Err(err) = game_state.on_found_secret() {
-                    //TODO show error dialog
+                    game_state.open_dialog(DialogOk::new_error(format!("Error: {}", err)));
                 }
             }
         }
@@ -1097,7 +1098,6 @@ impl Screen for ScreenInGame {
 pub struct ScreenSelectLevelPackEditor {
     is_creating_new_level_pack: bool,
     new_level_pack_id: String,
-    new_level_pack_error_message: String,
 }
 
 impl ScreenSelectLevelPackEditor {
@@ -1105,7 +1105,6 @@ impl ScreenSelectLevelPackEditor {
         Self {
             is_creating_new_level_pack: Default::default(),
             new_level_pack_id: String::new(),
-            new_level_pack_error_message: String::new(),
         }
     }
 }
@@ -1199,10 +1198,6 @@ impl Screen for ScreenSelectLevelPackEditor {
 
             console.set_cursor_pos(1, y + 2);
             console.draw_text(format!("> {}", &self.new_level_pack_id));
-
-            console.set_cursor_pos(1, y + 3);
-            console.set_color(Color::Red, Color::Default);
-            console.draw_text(&self.new_level_pack_error_message);
         }else if game_state.editor_state.get_level_pack_index() == game_state.editor_state.get_level_pack_count() {
             //Level Pack Editor entry
             console.set_cursor_pos(29, y + 2);
@@ -1232,9 +1227,8 @@ impl Screen for ScreenSelectLevelPackEditor {
                 },
 
                 keys::ENTER => {
-                    self.new_level_pack_error_message = String::new();
                     if self.new_level_pack_id.len() < 3 {
-                        self.new_level_pack_error_message = String::from("Level pack ID must have at least 3 characters!");
+                        game_state.open_dialog(DialogOk::new_error("Level pack ID must have at least 3 characters!"));
 
                         return;
                     }
@@ -1242,21 +1236,26 @@ impl Screen for ScreenSelectLevelPackEditor {
                     //TODO check if does not already exist and open level pack editor
 
                     let Ok(mut save_game_file) = Game::get_or_create_save_game_folder() else {
-                        //TODO error popup
-                        todo!();
+                        game_state.open_dialog(DialogOk::new_error("Can not save!"));
+
+                        return;
                     };
                     save_game_file.push(&self.new_level_pack_id);
                     save_game_file.push(".lvl.edit");
 
                     let Some(save_game_file) = save_game_file.to_str() else {
-                        //TODO error popup
-                        todo!();
+                        game_state.open_dialog(DialogOk::new_error("Can not save!"));
+
+                        return;
                     };
 
-                    game_state.editor_state.level_packs.push(LevelPack::new(&self.new_level_pack_id, save_game_file));
-                    game_state.editor_state.set_level_index(0);
+                    let level_pack = LevelPack::new(&self.new_level_pack_id, save_game_file);
+                    if let Err(err) = level_pack.save_editor_level_pack() {
+                        game_state.open_dialog(DialogOk::new_error(format!("Can not save: {}", err)));
+                    }
 
-                    //TODO save in save game folder
+                    game_state.editor_state.level_packs.push(level_pack);
+                    game_state.editor_state.set_level_index(0);
 
                     self.is_creating_new_level_pack = false;
                     self.new_level_pack_id = String::new();
@@ -1268,7 +1267,6 @@ impl Screen for ScreenSelectLevelPackEditor {
                 keys::ESC => {
                     self.is_creating_new_level_pack = false;
                     self.new_level_pack_id = String::new();
-                    self.new_level_pack_error_message = String::new();
                 },
 
                 _ => {},
@@ -1362,7 +1360,6 @@ pub struct ScreenLevelPackEditor {
     is_deleting_level: bool,
     new_level_width_str: String,
     new_level_height_str: String,
-    new_level_error_message: String,
 }
 
 impl ScreenLevelPackEditor {
@@ -1373,7 +1370,6 @@ impl ScreenLevelPackEditor {
             is_deleting_level: Default::default(),
             new_level_width_str: String::new(),
             new_level_height_str: String::new(),
-            new_level_error_message: String::new(),
         }
     }
 }
@@ -1485,10 +1481,6 @@ impl Screen for ScreenLevelPackEditor {
             }, Color::Default);
             console.set_cursor_pos(14, y + 2);
             console.draw_text(format!("Height: {}", &self.new_level_height_str));
-
-            console.set_cursor_pos(1, y + 3);
-            console.set_color(Color::Red, Color::Default);
-            console.draw_text(&self.new_level_error_message);
         }else if game_state.editor_state.get_level_index() == game_state.editor_state.get_current_level_pack().unwrap().level_count() {
             //Level Pack Editor entry
             console.set_cursor_pos(29, y + 2);
@@ -1545,39 +1537,38 @@ impl Screen for ScreenLevelPackEditor {
                 },
 
                 keys::ENTER => {
-                    self.new_level_error_message = String::new();
                     if !(1..=2).contains(&self.new_level_width_str.len()) {
-                        self.new_level_error_message = format!("Width must be >= 3 and <= {}!", Game::CONSOLE_MIN_WIDTH);
+                        game_state.open_dialog(DialogOk::new_error(format!("Width must be >= 3 and <= {}!", Game::CONSOLE_MIN_WIDTH)));
 
                         return;
                     }
 
                     let Ok(width) = usize::from_str(&self.new_level_width_str) else {
-                        self.new_level_error_message = String::from("Width must be a number");
+                        game_state.open_dialog(DialogOk::new_error("Width must be a number"));
 
                         return;
                     };
 
                     if !(3..=Game::CONSOLE_MIN_WIDTH).contains(&width) {
-                        self.new_level_error_message = format!("Width must be >= 3 and <= {}!", Game::CONSOLE_MIN_WIDTH);
+                        game_state.open_dialog(DialogOk::new_error(format!("Width must be >= 3 and <= {}!", Game::CONSOLE_MIN_WIDTH)));
 
                         return;
                     }
 
                     if !(1..=2).contains(&self.new_level_height_str.len()) {
-                        self.new_level_error_message = format!("Height must be >= 3 and <= {}!", Game::CONSOLE_MIN_HEIGHT - 1);
+                        game_state.open_dialog(DialogOk::new_error(format!("Height must be >= 3 and <= {}!", Game::CONSOLE_MIN_WIDTH)));
 
                         return;
                     }
 
                     let Ok(height) = usize::from_str(&self.new_level_height_str) else {
-                        self.new_level_error_message = String::from("Height must be a number");
+                        game_state.open_dialog(DialogOk::new_error("Height must be a number"));
 
                         return;
                     };
 
                     if !(3..Game::CONSOLE_MIN_HEIGHT).contains(&height) {
-                        self.new_level_error_message = format!("Height must be >= 3 and <= {}!", Game::CONSOLE_MIN_HEIGHT - 1);
+                        game_state.open_dialog(DialogOk::new_error(format!("Height must be >= 3 and <= {}!", Game::CONSOLE_MIN_WIDTH)));
 
                         return;
                     }
@@ -1601,7 +1592,6 @@ impl Screen for ScreenLevelPackEditor {
                     self.is_deleting_level = false;
                     self.new_level_width_str = String::new();
                     self.new_level_height_str = String::new();
-                    self.new_level_error_message = String::new();
                 },
 
                 _ => {},
@@ -1702,9 +1692,7 @@ impl Screen for ScreenLevelPackEditor {
                 let index = game_state.editor_state.selected_level_index;
                 game_state.editor_state.get_current_level_pack_mut().unwrap().levels_mut().remove(index);
                 if let Err(err) = game_state.editor_state.get_current_level_pack().unwrap().save_editor_level_pack() {
-                    //TODO open dialog
-
-                    todo!()
+                    game_state.open_dialog(DialogOk::new_error(format!("Can not save: {}", err)));
                 }
 
                 self.is_deleting_level = false;
@@ -1917,6 +1905,7 @@ impl Screen for ScreenLevelEditor {
 
     fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
         if key == keys::ESC {
+            //TODO use dialog with cancel option
             game_state.open_dialog(DialogYesNo::new("Exiting (Save changed?)"));
 
             return;
@@ -1955,7 +1944,7 @@ impl Screen for ScreenLevelEditor {
         }
     }
 
-    fn on_mouse_pressed(&mut self, game_state: &mut GameState, column: usize, row: usize) {
+    fn on_mouse_pressed(&mut self, _: &mut GameState, column: usize, row: usize) {
         if row == 0 || self.playing_level.is_some() {
             return;
         }
@@ -1986,9 +1975,7 @@ impl Screen for ScreenLevelEditor {
         if selection == DialogSelection::Yes {
             *game_state.editor_state.get_current_level_mut().unwrap() = self.level.take().unwrap();
             if let Err(err) = game_state.editor_state.get_current_level_pack().unwrap().save_editor_level_pack() {
-                //TODO open dialog
-
-                todo!()
+                game_state.open_dialog(DialogOk::new_error(format!("Can not save: {}", err)));
             }
 
             game_state.set_screen(ScreenId::LevelPackEditor);
