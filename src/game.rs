@@ -172,8 +172,8 @@ impl GameState {
         self.dialog.is_some()
     }
 
-    pub fn open_dialog(&mut self, dialog: impl Dialog + 'static) {
-        self.dialog = Some(Box::new(dialog));
+    pub fn open_dialog(&mut self, dialog: Box<dyn Dialog>) {
+        self.dialog = Some(dialog);
     }
 
     pub fn close_dialog(&mut self) {
