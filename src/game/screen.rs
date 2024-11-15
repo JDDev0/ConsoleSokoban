@@ -621,6 +621,9 @@ impl ScreenInGame {
         self.level_now = Some(level.clone());
         self.level_now_last_step = Some(level.clone());
 
+        self.continue_flag = false;
+        self.game_over_flag = false;
+
         'outer:
         for i in 0..level.width() {
             for j in 0..level.height() {
@@ -922,8 +925,6 @@ impl Screen for ScreenInGame {
 
                 self.start_level(game_state.get_current_level_pack().unwrap().levels()[game_state.current_level_index].level());
             }else if key == 'r' as i32 {
-                self.continue_flag = false;
-
                 self.start_level(level_pack.levels()[current_level_index].level());
             }
 
