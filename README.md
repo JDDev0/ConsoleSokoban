@@ -9,20 +9,18 @@ Download on itch.io: [Console Sokoban](https://jddev0.itch.io/console-sokoban)
 
 ## Compile & Run
 
-### Linux
+### Requirements
+Linux:
 - Required packages: `cmake`, `make`, `gcc`, `libncurses-dev`
+- Rust compiler must be installed [Rust installation](https://www.rust-lang.org/tools/install)
+
+Windows:
+- Install cmake and add it to $PATH
+- Install MinGW and add it to $PATH
+- Rust compiler must be installed [Rust installation](https://www.rust-lang.org/tools/install)
+
+### Compile & Run
 
 Compile & Run
-1. `cmake -DCMAKE_BUILD_TYPE=Release -S . -B release`
-2. `cmake --build release`
-3. `release/Sokoban`
-
-### Windows
-Required programs:
-1. Install cmake and add it to $PATH
-2. Install MinGW and add it to $PATH
-
-Compile & Run
-1. `cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -S . -B release`
-2. `cmake --build release`
-3. Go into the `release` folder and double click `Sokoban.exe`
+1. `cargo build`
+2. `cargo run`
