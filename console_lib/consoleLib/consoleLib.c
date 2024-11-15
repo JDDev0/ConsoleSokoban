@@ -421,7 +421,8 @@
         const int bBG = bg%2;
 
         //Reset color
-        color = color & ~(BACKGROUND_INTENSITY|BACKGROUND_RED|BACKGROUND_GREEN|BACKGROUND_BLUE);
+        color = color & ~(FOREGROUND_INTENSITY|FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_BLUE|
+            BACKGROUND_INTENSITY|BACKGROUND_RED|BACKGROUND_GREEN|BACKGROUND_BLUE);
 
         //Set color
         if(fg != -1) {
