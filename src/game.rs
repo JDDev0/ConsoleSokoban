@@ -333,11 +333,28 @@ impl <'a> Game<'a> {
             level_packs.push(LevelPack::read_from_save_game(level_pack_id, &arg, level_pack_data)?);
         }
 
+        if level_packs.len() > LevelPack::MAX_LEVEL_PACK_COUNT {
+            return Err(Box::new(GameError::new(format!(
+                "Too many level packs ({}, max: {})",
+                level_packs.len(),
+                LevelPack::MAX_LEVEL_PACK_COUNT,
+            ))));
+        }
+
         for level_pack in level_packs.iter() {
             if level_pack.level_count() == 0 {
                 return Err(Box::new(GameError::new(format!(
                     "Error while loading level pack \"{}\": Level pack contains no levels",
                     level_pack.id()
+                ))));
+            }
+
+            if level_pack.level_count() > LevelPack::MAX_LEVEL_COUNT_PER_PACK {
+                return Err(Box::new(GameError::new(format!(
+                    "Error while loading level pack \"{}\": Level pack contains too many levels ({}, max: {})",
+                    level_pack.id(),
+                    level_pack.level_count(),
+                    LevelPack::MAX_LEVEL_COUNT_PER_PACK,
                 ))));
             }
 
@@ -403,8 +420,25 @@ impl <'a> Game<'a> {
             }
         }
 
+        if editor_level_packs.len() > LevelPack::MAX_LEVEL_PACK_COUNT {
+            return Err(Box::new(GameError::new(format!(
+                "Too many level packs ({}, max: {})",
+                editor_level_packs.len(),
+                LevelPack::MAX_LEVEL_PACK_COUNT,
+            ))));
+        }
+
         for level_pack in editor_level_packs.iter() {
             //Level pack for editor might be empty and might contain no player tile
+
+            if level_pack.level_count() > LevelPack::MAX_LEVEL_COUNT_PER_PACK {
+                return Err(Box::new(GameError::new(format!(
+                    "Error while loading editor level pack \"{}\": Level pack contains too many levels ({}, max: {})",
+                    level_pack.id(),
+                    level_pack.level_count(),
+                    LevelPack::MAX_LEVEL_COUNT_PER_PACK,
+                ))));
+            }
 
             for (i, level) in level_pack.levels().iter().
                     map(|level| level.level()).

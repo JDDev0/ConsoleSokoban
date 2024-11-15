@@ -418,7 +418,7 @@ pub struct LevelPack {
 
 impl LevelPack {
     pub const MAX_LEVEL_PACK_COUNT: usize = 64;
-    pub const MAX_LEVEL_COUNT_PER_PACK: usize = 192;
+    pub const MAX_LEVEL_COUNT_PER_PACK: usize = 191;
 
     pub fn new(id: impl Into<String>, path: impl Into<String>) -> Self {
         Self {

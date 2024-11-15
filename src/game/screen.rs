@@ -1116,6 +1116,8 @@ impl Screen for ScreenSelectLevelPackEditor {
         console.draw_text("Edit a level pack:");
         console.set_underline(false);
 
+        let has_max_level_pack_count = game_state.editor_state.get_level_pack_count() == LevelPack::MAX_LEVEL_PACK_COUNT;
+
         //Include Create Level Pack entry
         let entry_count = game_state.editor_state.get_level_pack_count() + 1;
 
@@ -1150,7 +1152,11 @@ impl Screen for ScreenSelectLevelPackEditor {
             console.set_cursor_pos(x, y);
             if i == game_state.editor_state.get_level_pack_count() {
                 //Level Pack Editor entry
-                console.set_color(Color::White, Color::LightBlue);
+                if has_max_level_pack_count {
+                    console.set_color(Color::White, Color::LightRed);
+                }else {
+                    console.set_color(Color::White, Color::LightBlue);
+                }
                 console.draw_text(" +");
             }else {
                 console.set_color(Color::Black, Color::Green);
@@ -1200,8 +1206,20 @@ impl Screen for ScreenSelectLevelPackEditor {
             console.draw_text(format!("> {}", &self.new_level_pack_id));
         }else if game_state.editor_state.get_level_pack_index() == game_state.editor_state.get_level_pack_count() {
             //Level Pack Editor entry
-            console.set_cursor_pos(29, y + 2);
-            console.draw_text("Create level pack");
+            if has_max_level_pack_count {
+                let error_msg = format!(
+                    "Max level pack count ({}) reached",
+                    LevelPack::MAX_LEVEL_PACK_COUNT,
+                );
+
+                let x_offset = ((Game::CONSOLE_MIN_WIDTH - error_msg.len()) as f64 * 0.5) as usize;
+                console.set_cursor_pos(x_offset, y + 2);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text(error_msg);
+            }else {
+                console.set_cursor_pos(29, y + 2);
+                console.draw_text("Create level pack");
+            }
         }else {
             console.set_cursor_pos(1, y + 1);
             console.draw_text(format!("Level Pack ID: {}", game_state.editor_state.get_current_level_pack().unwrap().id()));
@@ -1331,7 +1349,14 @@ impl Screen for ScreenSelectLevelPackEditor {
                 keys::ENTER => {
                     if game_state.editor_state.selected_level_pack_index == game_state.editor_state.get_level_pack_count() {
                         //Level Pack Editor entry
-                        self.is_creating_new_level_pack = true;
+                        if game_state.editor_state.get_level_pack_count() == LevelPack::MAX_LEVEL_PACK_COUNT {
+                            game_state.open_dialog(DialogOk::new_error(format!(
+                                "Can not create new level packs (Max level pack count ({}) reached)",
+                                LevelPack::MAX_LEVEL_PACK_COUNT,
+                            )));
+                        }else {
+                            self.is_creating_new_level_pack = true;
+                        }
                     }else {
                         //Set selected level pack
                         game_state.editor_state.set_level_index(0);
@@ -1386,6 +1411,8 @@ impl Screen for ScreenLevelPackEditor {
         console.draw_text(format!("Edit a level (Level pack \"{}\"):", game_state.editor_state.get_current_level_pack().unwrap().id()));
         console.set_underline(false);
 
+        let has_max_level_count = game_state.editor_state.get_current_level_pack().unwrap().level_count() == LevelPack::MAX_LEVEL_COUNT_PER_PACK;
+
         //Include Create Level entry
         let entry_count = game_state.editor_state.get_current_level_pack().unwrap().level_count() + 1;
 
@@ -1419,8 +1446,12 @@ impl Screen for ScreenLevelPackEditor {
 
             console.set_cursor_pos(x, y);
             if i == game_state.editor_state.get_current_level_pack().unwrap().level_count() {
-                //Level Pack entry
-                console.set_color(Color::White, Color::LightBlue);
+                //Level Editor entry
+                if has_max_level_count {
+                    console.set_color(Color::White, Color::LightRed);
+                }else {
+                    console.set_color(Color::White, Color::LightBlue);
+                }
                 console.draw_text(" +");
             }else {
                 console.set_color(Color::Black, Color::Green);
@@ -1487,9 +1518,21 @@ impl Screen for ScreenLevelPackEditor {
             console.set_cursor_pos(14, y + 2);
             console.draw_text(format!("Height: {}", &self.new_level_height_str));
         }else if game_state.editor_state.get_level_index() == game_state.editor_state.get_current_level_pack().unwrap().level_count() {
-            //Level Pack Editor entry
-            console.set_cursor_pos(29, y + 2);
-            console.draw_text("Create level");
+            //Level Editor entry
+            if has_max_level_count {
+                let error_msg = format!(
+                    "Max level count ({}) reached",
+                    LevelPack::MAX_LEVEL_COUNT_PER_PACK,
+                );
+
+                let x_offset = ((Game::CONSOLE_MIN_WIDTH - error_msg.len()) as f64 * 0.5) as usize;
+                console.set_cursor_pos(x_offset, y + 2);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text(error_msg);
+            }else {
+                console.set_cursor_pos(31, y + 2);
+                console.draw_text("Create level");
+            }
         }else {
             //Draw best time and best moves
             console.set_cursor_pos(1, y + 1);
@@ -1653,8 +1696,15 @@ impl Screen for ScreenLevelPackEditor {
 
                 keys::ENTER => {
                     if game_state.editor_state.selected_level_index == game_state.editor_state.get_current_level_pack().unwrap().level_count() {
-                        //Level Pack entry
-                        self.is_creating_new_level = true;
+                        //Level Editor entry
+                        if game_state.editor_state.get_current_level_pack().unwrap().level_count() == LevelPack::MAX_LEVEL_COUNT_PER_PACK {
+                            game_state.open_dialog(DialogOk::new_error(format!(
+                                "Can not create level packs (Max level count ({}) reached)",
+                                LevelPack::MAX_LEVEL_COUNT_PER_PACK,
+                            )));
+                        }else {
+                            self.is_creating_new_level = true;
+                        }
                     }else {
                         //Set selected level
                         game_state.set_screen(ScreenId::LevelEditor);
