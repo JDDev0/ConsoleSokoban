@@ -1287,8 +1287,6 @@ impl Screen for ScreenSelectLevelPackEditor {
             return;
         }
 
-        //TODO handle enter
-
         'outer: {
             //Include Level Pack Editor entry
             let entry_count = game_state.editor_state.get_level_pack_count() + 1;
@@ -1611,8 +1609,6 @@ impl Screen for ScreenLevelPackEditor {
 
             return;
         }
-
-        //TODO handle enter
 
         'outer: {
             //Include Level Pack Editor entry
