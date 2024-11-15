@@ -42,7 +42,7 @@ impl Tile {
 
             b'#' => Ok(Tile::Wall),
 
-            b'P' => Ok(Tile::Player),
+            b'p' | b'P' => Ok(Tile::Player),
 
             b'*' => Ok(Tile::Key),
             b'~' => Ok(Tile::KeyInGoal),
@@ -50,74 +50,99 @@ impl Tile {
 
             b'@' => Ok(Tile::Box),
             b'+' => Ok(Tile::BoxInGoal),
-            b'x' => Ok(Tile::Goal),
+            b'x' | b'X' => Ok(Tile::Goal),
 
-            b's' => Ok(Tile::Secret),
+            b's' | b'S' => Ok(Tile::Secret),
 
             _ => Err(LevelLoadingError::new("Invalid tile")),
         }
     }
 
-    pub fn draw(&self, console: &Console, is_player_background: bool) {
+    pub fn to_ascii(&self) -> u8 {
+        match self {
+            Tile::Empty => b'-',
+
+            Tile::OneWayLeft => b'<',
+            Tile::OneWayUp => b'^',
+            Tile::OneWayRight => b'>',
+            Tile::OneWayDown => b'v',
+
+            Tile::Wall => b'#',
+
+            Tile::Player => b'P',
+
+            Tile::Key => b'*',
+            Tile::KeyInGoal => b'~',
+            Tile::LockedDoor => b'=',
+
+            Tile::Box => b'@',
+            Tile::BoxInGoal => b'+',
+            Tile::Goal => b'x',
+
+            Tile::Secret => b's',
+        }
+    }
+
+    pub fn draw(&self, console: &Console, is_player_background: bool, inverted: bool) {
         match self {
             Tile::Empty => {
-                console.set_color(Color::LightBlue, Color::Default);
+                console.set_color_invertible(Color::LightBlue, Color::Default, inverted);
                 console.draw_text("-");
             },
             Tile::OneWayLeft => {
-                console.set_color(Color::LightBlue, Color::Default);
+                console.set_color_invertible(Color::LightBlue, Color::Default, inverted);
                 console.draw_text("<");
             },
             Tile::OneWayUp => {
-                console.set_color(Color::LightBlue, Color::Default);
+                console.set_color_invertible(Color::LightBlue, Color::Default, inverted);
                 console.draw_text("^");
             },
             Tile::OneWayRight => {
-                console.set_color(Color::LightBlue, Color::Default);
+                console.set_color_invertible(Color::LightBlue, Color::Default, inverted);
                 console.draw_text(">");
             },
             Tile::OneWayDown => {
-                console.set_color(Color::LightBlue, Color::Default);
+                console.set_color_invertible(Color::LightBlue, Color::Default, inverted);
                 console.draw_text("v");
             },
             Tile::Wall => {
-                console.set_color(Color::LightGreen, Color::Default);
+                console.set_color_invertible(Color::LightGreen, Color::Default, inverted);
                 console.draw_text("#");
             },
             Tile::Player => {
                 if is_player_background {
-                    console.set_color(Color::Default, Color::Yellow);
+                    console.set_color_invertible(Color::Default, Color::Yellow, inverted);
                 }else {
-                    console.set_color(Color::Yellow, Color::Default);
+                    console.set_color_invertible(Color::Yellow, Color::Default, inverted);
                 }
                 console.draw_text("P");
             },
             Tile::Key => {
-                console.set_color(Color::LightCyan, Color::Default);
+                console.set_color_invertible(Color::LightCyan, Color::Default, inverted);
                 console.draw_text("*");
             },
             Tile::KeyInGoal => {
-                console.set_color(Color::LightPink, Color::Default);
+                console.set_color_invertible(Color::LightPink, Color::Default, inverted);
                 console.draw_text("*");
             },
             Tile::LockedDoor => {
-                console.set_color(Color::LightRed, Color::Default);
+                console.set_color_invertible(Color::LightRed, Color::Default, inverted);
                 console.draw_text("=");
             },
             Tile::Box => {
-                console.set_color(Color::LightCyan, Color::Default);
+                console.set_color_invertible(Color::LightCyan, Color::Default, inverted);
                 console.draw_text("@");
             },
             Tile::BoxInGoal => {
-                console.set_color(Color::LightPink, Color::Default);
+                console.set_color_invertible(Color::LightPink, Color::Default, inverted);
                 console.draw_text("@");
             },
             Tile::Goal => {
-                console.set_color(Color::LightRed, Color::Default);
+                console.set_color_invertible(Color::LightRed, Color::Default, inverted);
                 console.draw_text("x");
             },
             Tile::Secret => {
-                console.set_color(Color::LightBlue, Color::Default);
+                console.set_color_invertible(Color::LightBlue, Color::Default, inverted);
                 console.draw_text("+");
             },
         };
@@ -153,26 +178,29 @@ impl Level {
     pub fn height(&self) -> usize {
         self.height
     }
-
-    pub fn tiles(&self) -> &Vec<Tile> {
-        &self.tiles
-    }
     
     pub fn get_tile(&self, x: usize, y: usize) -> Option<&Tile> {
         self.tiles.get(x + y * self.width)
+    }
+
+    pub fn get_tile_mut(&mut self, x: usize, y: usize) -> Option<&mut Tile> {
+        self.tiles.get_mut(x + y * self.width)
     }
 
     pub fn set_tile(&mut self, x: usize, y: usize, tile: Tile) {
         self.tiles[x + y * self.width] = tile;
     }
 
-    pub fn move_box_or_key(&mut self, level_original: &Level, has_won: &mut bool, pos_x: usize, pos_y: usize, move_x: isize, move_y: isize) -> bool {
+    pub fn move_box_or_key(&mut self, level_original: &Level, has_won: &mut bool, from_pos_x: usize, from_pos_y: usize, to_pos_x: usize, to_pos_y: usize) -> bool {
         if self.width != level_original.width || self.height != level_original.height {
             panic!("Original level must have the same width and height as the modified level!");
         }
 
-        let index_from = pos_x + pos_y * self.width;
-        let index_to = (pos_x as isize + move_x) as usize + (pos_y as isize + move_y) as usize * self.width;
+        let move_x = to_pos_x as isize - from_pos_x as isize;
+        let move_y = to_pos_y as isize - from_pos_y as isize;
+        let index_from = to_pos_x + to_pos_y * self.width;
+        let index_to = ((to_pos_x as isize + move_x + self.width as isize) % self.width as isize) as usize +
+                ((to_pos_y as isize + move_y + self.height as isize) % self.height as isize) as usize * self.width;
 
         let Some(tile_from) = self.tiles.get(index_from) else {
             return false;
@@ -239,20 +267,32 @@ impl Level {
         false
     }
 
-    pub fn draw(&self, console: &Console, x_offset: usize, y_offset: usize, is_player_background: bool) {
+    pub fn draw(&self, console: &Console, x_offset: usize, y_offset: usize, is_player_background: bool, cursor_pos: Option<(usize, usize)>) {
         let mut tile_iter = self.tiles.iter();
 
         for i in 0..self.height {
             console.set_cursor_pos(x_offset, i + y_offset);
 
-            for _ in 0..self.width {
+            for j in 0..self.width {
                 if let Some(tile) = tile_iter.next() {
-                    tile.draw(console, is_player_background);
+                    tile.draw(console, is_player_background, cursor_pos.is_some_and(|(x, y)| x == j && y == i));
                 }
             }
 
             console.draw_text("\n");
         }
+    }
+
+    pub fn to_str(&self) -> String {
+        let mut out = String::with_capacity(14 + self.width * self.height);
+
+        out += &format!("w: {}, h: {}\n", self.width, self.height);
+        for row in self.tiles.chunks(self.width) {
+            row.iter().map(|tile| (tile.to_ascii() as char).to_string()).for_each(|tile| out += &tile);
+            out += "\n";
+        }
+
+        out
     }
 }
 
@@ -324,6 +364,10 @@ impl LevelWithStats {
 
     pub fn level(&self) -> &Level {
         &self.level
+    }
+
+    pub fn level_mut(&mut self) -> &mut Level {
+        &mut self.level
     }
 
     pub fn best_time(&self) -> Option<u64> {
@@ -559,7 +603,21 @@ impl LevelPack {
         Ok(level_pack)
     }
 
-    pub fn save_save_game(&self, ) -> Result<(), Box<dyn Error>> {
+    pub fn save_editor_level_pack(&self) -> Result<(), Box<dyn Error>> {
+        let mut file = File::create(&self.path)?;
+
+        file.write_fmt(format_args!("Levels: {}\n", self.levels.len()))?;
+
+        for level in self.levels.iter().
+                map(|level| level.level()) {
+            file.write_fmt(format_args!("\n{}", level.to_str()))?;
+        }
+        file.flush()?;
+
+        Ok(())
+    }
+
+    pub fn save_save_game(&self) -> Result<(), Box<dyn Error>> {
         let mut save_game_file = Game::get_or_create_save_game_folder()?;
         save_game_file.push(&self.id);
         save_game_file.push(".lvl.sav");
@@ -591,6 +649,10 @@ impl LevelPack {
 
     pub fn levels(&self) -> &Vec<LevelWithStats> {
         &self.levels
+    }
+
+    pub fn levels_mut(&mut self) -> &mut Vec<LevelWithStats> {
+        &mut self.levels
     }
 
     pub fn min_level_not_completed(&self) -> usize {

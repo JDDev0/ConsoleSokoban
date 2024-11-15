@@ -144,6 +144,14 @@ impl Console<'_> {
         unsafe { bindings::setColor(fg as c_int, bg as c_int) }
     }
 
+    pub fn set_color_invertible(&self, fg: Color, bg: Color, inverted: bool) {
+        if inverted {
+            self.set_color(bg, fg);
+        }else {
+            self.set_color(fg, bg);
+        }
+    }
+
     pub fn reset_color(&self) {
         unsafe { bindings::resetColor() }
     }

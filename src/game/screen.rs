@@ -1,9 +1,10 @@
 use console_lib::{keys, Color, Console};
 use std::cmp::Ordering;
 use std::mem;
+use std::str::FromStr;
 use std::time::SystemTime;
 use crate::game::{Game, GameState};
-use crate::game::level::{Level, Tile};
+use crate::game::level::{Level, LevelPack, Tile};
 
 pub struct Dialog {
     message: String
@@ -92,9 +93,15 @@ impl Dialog {
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum ScreenId {
     StartMenu,
+
     SelectLevelPack,
     SelectLevel,
+
     InGame,
+
+    SelectLevelPackEditor,
+    LevelPackEditor,
+    LevelEditor,
 }
 
 #[allow(unused_variables)]
@@ -238,11 +245,14 @@ impl Screen for ScreenSelectLevelPack {
         console.draw_text("Select a level pack:");
         console.set_underline(false);
 
+        //Include Level Pack Editor entry
+        let entry_count = game_state.get_level_pack_count() + 1;
+
         //Draw first line
         console.set_cursor_pos(0, 1);
         console.draw_text("-");
-        let mut max = game_state.get_level_pack_count()%24;
-        if game_state.get_level_pack_count()/24 > 0 {
+        let mut max = entry_count%24;
+        if entry_count/24 > 0 {
             max = 24;
         }
 
@@ -253,7 +263,7 @@ impl Screen for ScreenSelectLevelPack {
             console.draw_text("---");
         }
 
-        for i in 0..game_state.get_level_pack_count() {
+        for i in 0..entry_count {
             let x = 1 + (i%24)*3;
             let y = 2 + (i/24)*2;
 
@@ -267,13 +277,19 @@ impl Screen for ScreenSelectLevelPack {
             }
 
             console.set_cursor_pos(x, y);
-            console.set_color(Color::Black, if game_state.level_packs().get(i).
-                    unwrap().level_pack_best_moves_sum().is_some() {
-                Color::Green
+            if i == game_state.get_level_pack_count() {
+                //Level Pack Editor entry
+                console.set_color(Color::White, Color::LightBlue);
+                console.draw_text(" +");
             }else {
-                Color::Yellow
-            });
-            console.draw_text(format!("{:2}", i + 1));
+                console.set_color(Color::Black, if game_state.level_packs().get(i).
+                        unwrap().level_pack_best_moves_sum().is_some() {
+                    Color::Green
+                }else {
+                    Color::Yellow
+                });
+                console.draw_text(format!("{:2}", i + 1));
+            }
 
             console.reset_color();
             console.draw_text("|");
@@ -297,7 +313,7 @@ impl Screen for ScreenSelectLevelPack {
         console.draw_text("----");
 
         //Draw border for best time and best moves
-        let y = 4 + (game_state.get_level_pack_count()/24)*2;
+        let y = 4 + (entry_count/24)*2;
 
         console.set_cursor_pos(0, y);
         console.set_color(Color::Cyan, Color::Default);
@@ -308,31 +324,37 @@ impl Screen for ScreenSelectLevelPack {
         }
         console.set_cursor_pos(0, y + 4);
         console.draw_text("\'-----------------------------------\'");
-
         console.reset_color();
-        //Draw sum of best time and sum of best moves
-        console.set_cursor_pos(1, y + 1);
-        console.draw_text(format!("Selected level pack:             {:02}", game_state.get_level_pack_index() + 1));
-        console.set_cursor_pos(1, y + 2);
-        console.draw_text("Sum of best time   : ");
-        match game_state.get_current_level_pack().as_ref().unwrap().level_pack_best_time_sum() {
-            None => console.draw_text("X:XX:XX:XX.XXX"),
-            Some(best_time_sum) => {
-                console.draw_text(format!(
-                    "{:01}:{:02}:{:02}:{:02}.{:03}",
-                    best_time_sum/86400000,
-                    (best_time_sum/3600000)%24,
-                    (best_time_sum/60000)%60,
-                    (best_time_sum/1000)%60,
-                    best_time_sum%1000
-                ));
-            },
-        }
-        console.set_cursor_pos(1, y + 3);
-        console.draw_text("Sum of best moves  :        ");
-        match game_state.get_current_level_pack().as_ref().unwrap().level_pack_best_moves_sum() {
-            None => console.draw_text("XXXXXXX"),
-            Some(best_moves_sum) => console.draw_text(format!("{:07}", best_moves_sum)),
+
+        if game_state.get_level_pack_index() == game_state.get_level_pack_count() {
+            //Level Pack Editor entry
+            console.set_cursor_pos(5, y + 2);
+            console.draw_text("Create or edit level packs");
+        }else {
+            //Draw sum of best time and sum of best moves
+            console.set_cursor_pos(1, y + 1);
+            console.draw_text(format!("Selected level pack:             {:02}", game_state.get_level_pack_index() + 1));
+            console.set_cursor_pos(1, y + 2);
+            console.draw_text("Sum of best time   : ");
+            match game_state.get_current_level_pack().as_ref().unwrap().level_pack_best_time_sum() {
+                None => console.draw_text("X:XX:XX:XX.XXX"),
+                Some(best_time_sum) => {
+                    console.draw_text(format!(
+                        "{:01}:{:02}:{:02}:{:02}.{:03}",
+                        best_time_sum/86400000,
+                        (best_time_sum/3600000)%24,
+                        (best_time_sum/60000)%60,
+                        (best_time_sum/1000)%60,
+                        best_time_sum%1000
+                    ));
+                },
+            }
+            console.set_cursor_pos(1, y + 3);
+            console.draw_text("Sum of best moves  :        ");
+            match game_state.get_current_level_pack().as_ref().unwrap().level_pack_best_moves_sum() {
+                None => console.draw_text("XXXXXXX"),
+                Some(best_moves_sum) => console.draw_text(format!("{:07}", best_moves_sum)),
+            }
         }
     }
 
@@ -350,6 +372,9 @@ impl Screen for ScreenSelectLevelPack {
         }
 
         'outer: {
+            //Include Level Pack Editor entry
+            let entry_count = game_state.get_level_pack_count() + 1;
+
             match key {
                 keys::LEFT => {
                     if game_state.current_level_pack_index == 0 {
@@ -366,14 +391,14 @@ impl Screen for ScreenSelectLevelPack {
                     game_state.current_level_pack_index -= 24;
                 },
                 keys::RIGHT => {
-                    if game_state.current_level_pack_index + 1 >= game_state.get_level_pack_count() {
+                    if game_state.current_level_pack_index + 1 >= entry_count {
                         break 'outer;
                     }
 
                     game_state.current_level_pack_index += 1;
                 },
                 keys::DOWN => {
-                    if game_state.current_level_pack_index + 24 >= game_state.get_level_pack_count() {
+                    if game_state.current_level_pack_index + 24 >= entry_count {
                         break 'outer;
                     }
 
@@ -381,15 +406,22 @@ impl Screen for ScreenSelectLevelPack {
                 },
 
                 keys::ENTER => {
-                    //Set selected level
-                    let min_level_not_completed = game_state.get_current_level_pack().as_ref().unwrap().min_level_not_completed();
-                    if min_level_not_completed >= game_state.get_current_level_pack().as_ref().unwrap().level_count() {
+                    if game_state.get_level_pack_index() == game_state.get_level_pack_count() {
+                        //Level Pack Editor entry
                         game_state.set_level_index(0);
-                    }else {
-                        game_state.set_level_index(min_level_not_completed);
-                    }
 
-                    game_state.set_screen(ScreenId::SelectLevel);
+                        game_state.set_screen(ScreenId::SelectLevelPackEditor);
+                    }else {
+                        //Set selected level
+                        let min_level_not_completed = game_state.get_current_level_pack().as_ref().unwrap().min_level_not_completed();
+                        if min_level_not_completed >= game_state.get_current_level_pack().as_ref().unwrap().level_count() {
+                            game_state.set_level_index(0);
+                        }else {
+                            game_state.set_level_index(min_level_not_completed);
+                        }
+
+                        game_state.set_screen(ScreenId::SelectLevel);
+                    }
                 },
 
                 _ => {},
@@ -401,9 +433,11 @@ impl Screen for ScreenSelectLevelPack {
         if row == 0 {
             return;
         }
+        //Include Level Pack Editor entry
+        let entry_count = game_state.get_level_pack_count() + 1;
 
         let level_pack_index = column/3 + (row - 1)/2*24;
-        if level_pack_index < game_state.get_level_pack_count() {
+        if level_pack_index < entry_count {
             game_state.set_level_pack_index(level_pack_index);
             self.on_key_pressed(game_state, keys::ENTER);
         }
@@ -906,7 +940,7 @@ impl Screen for ScreenInGame {
             let x_offset = ((Game::CONSOLE_MIN_WIDTH - level.width()) as f64 * 0.5) as usize;
             let y_offset = 1;
 
-            level.draw(console, x_offset, y_offset, game_state.is_player_background());
+            level.draw(console, x_offset, y_offset, game_state.is_player_background(), None);
 
             self.draw_tutorial_level_text(game_state, console);
         }
@@ -1033,120 +1067,83 @@ impl Screen for ScreenInGame {
         if console_lib::is_arrow_key(key) {
             let level_now_before_move = self.level_now.clone();
 
-            let player_pos_tmp = self.player_pos;
+            let width = self.level_now.as_ref().unwrap().width();
+            let height = self.level_now.as_ref().unwrap().height();
+
+            let (x_from, y_from) = self.player_pos;
+
+            let x_to = match key {
+                keys::LEFT => if x_from == 0 {
+                    width - 1
+                }else {
+                    x_from - 1
+                },
+                keys::RIGHT => if x_from == width - 1 {
+                    0
+                }else {
+                    x_from + 1
+                },
+                _ => x_from,
+            };
+            let y_to = match key {
+                keys::UP => if y_from == 0 {
+                    height - 1
+                }else {
+                    y_from - 1
+                },
+                keys::DOWN => if y_from == height - 1 {
+                    0
+                }else {
+                    y_from + 1
+                },
+                _ => y_from,
+            };
+
+            let one_way_door_tile = match key {
+                keys::LEFT => Tile::OneWayLeft,
+                keys::UP => Tile::OneWayUp,
+                keys::RIGHT => Tile::OneWayRight,
+                keys::DOWN => Tile::OneWayDown,
+                _ => return, //Should never happen
+            };
 
             //Set players old position to old level data
-            let mut tile = level_pack.levels()[current_level_index].level().
-                    get_tile(player_pos_tmp.0, player_pos_tmp.1).unwrap().clone();
+            let mut tile = level_pack.levels()[current_level_index].level().get_tile(x_from, y_from).unwrap().clone();
             if tile == Tile::Player || tile == Tile::Box || tile == Tile::Key || tile == Tile::LockedDoor {
                 tile = Tile::Empty;
             }else if tile == Tile::BoxInGoal || tile == Tile::KeyInGoal {
                 tile = Tile::Goal;
             }
 
-            self.level_now.as_mut().unwrap().set_tile(player_pos_tmp.0, player_pos_tmp.1, tile);
+            self.level_now.as_mut().unwrap().set_tile(x_from, y_from, tile);
 
             self.time_start.get_or_insert_with(SystemTime::now);
 
             let mut has_won = false;
-            let (x, y) = self.player_pos;
-            match key {
-                keys::LEFT => {
-                    let tile = self.level_now.as_ref().unwrap().get_tile(player_pos_tmp.0 - 1, player_pos_tmp.1).unwrap().clone();
-                    match tile {
-                        Tile::Empty | Tile::Goal | Tile::OneWayLeft | Tile::Secret => {
-                            if tile == Tile::Secret {
-                                self.game_over_flag = true;
-                                self.secret_found_flag = true;
-                            }
+            let tile = self.level_now.as_ref().unwrap().get_tile(x_to, y_to).unwrap().clone();
+            if matches!(tile, Tile::Empty | Tile::Goal | Tile::Secret) || tile == one_way_door_tile {
+                if tile == Tile::Secret {
+                    self.game_over_flag = true;
+                    self.secret_found_flag = true;
+                }
 
-                            self.player_pos = (x - 1, y);
-                        },
-                        Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if
-                        self.level_now.as_mut().unwrap().move_box_or_key(
-                            level_pack.levels().get(current_level_index).unwrap().level(),
-                            &mut has_won, player_pos_tmp.0 - 1, player_pos_tmp.1, -1, 0
-                        ) => {
-                            self.player_pos = (x - 1, y);
-                        },
-                        _ => {},
-                    }
-                },
-                keys::UP => {
-                    let tile = self.level_now.as_ref().unwrap().get_tile(player_pos_tmp.0, player_pos_tmp.1 - 1).unwrap().clone();
-                    match tile {
-                        Tile::Empty | Tile::Goal | Tile::OneWayUp | Tile::Secret => {
-                            if tile == Tile::Secret {
-                                self.game_over_flag = true;
-                                self.secret_found_flag = true;
-                            }
-
-                            self.player_pos = (x, y - 1);
-                        },
-                        Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if
-                        self.level_now.as_mut().unwrap().move_box_or_key(
-                            level_pack.levels().get(current_level_index).unwrap().level(),
-                            &mut has_won, player_pos_tmp.0, player_pos_tmp.1 - 1, 0, -1
-                        ) => {
-                            self.player_pos = (x, y - 1);
-                        },
-                        _ => {},
-                    }
-                },
-                keys::RIGHT => {
-                    let tile = self.level_now.as_ref().unwrap().get_tile(player_pos_tmp.0 + 1, player_pos_tmp.1).unwrap().clone();
-                    match tile {
-                        Tile::Empty | Tile::Goal | Tile::OneWayRight | Tile::Secret => {
-                            if tile == Tile::Secret {
-                                self.game_over_flag = true;
-                                self.secret_found_flag = true;
-                            }
-
-                            self.player_pos = (x + 1, y);
-                        },
-                        Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if
-                        self.level_now.as_mut().unwrap().move_box_or_key(
-                            level_pack.levels().get(current_level_index).unwrap().level(),
-                            &mut has_won, player_pos_tmp.0 + 1, player_pos_tmp.1, 1, 0
-                        ) => {
-                            self.player_pos = (x + 1, y);
-                        },
-                        _ => {},
-                    }
-                },
-                keys::DOWN => {
-                    let tile = self.level_now.as_ref().unwrap().get_tile(player_pos_tmp.0, player_pos_tmp.1 + 1).unwrap().clone();
-                    match tile {
-                        Tile::Empty | Tile::Goal | Tile::OneWayDown | Tile::Secret => {
-                            if tile == Tile::Secret {
-                                self.game_over_flag = true;
-                                self.secret_found_flag = true;
-                            }
-
-                            self.player_pos = (x, y + 1);
-                        },
-                        Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if
-                        self.level_now.as_mut().unwrap().move_box_or_key(
-                            level_pack.levels().get(current_level_index).unwrap().level(),
-                            &mut has_won, player_pos_tmp.0, player_pos_tmp.1 + 1, 0, 1
-                        ) => {
-                            self.player_pos = (x, y + 1);
-                        },
-                        _ => {},
-                    }
-                },
-                _ => {},
+                self.player_pos = (x_to, y_to);
+            }else if matches!(tile, Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if self.level_now.as_mut().unwrap().move_box_or_key(
+                level_pack.levels().get(current_level_index).unwrap().level(),
+                &mut has_won, x_from, y_from, x_to, y_to
+            )) {
+                self.player_pos = (x_to, y_to);
             }
 
             //Set player to new position
             self.level_now.as_mut().unwrap().set_tile(self.player_pos.0, self.player_pos.1, Tile::Player);
 
             //Copy level to last step if change
-            if self.player_pos != player_pos_tmp {
+            if self.player_pos != (x_from, y_from) {
                 self.old_moves = self.moves;
                 self.moves += 1;
 
-                self.old_player_pos = player_pos_tmp;
+                self.old_player_pos = (x_from, y_from);
                 self.level_now_last_step = level_now_before_move;
             }
 
@@ -1187,5 +1184,933 @@ impl Screen for ScreenInGame {
     fn on_set_screen(&mut self, game_state: &mut GameState) {
         self.start_level(game_state.get_current_level_pack().as_ref().unwrap().levels().get(
             game_state.get_level_index()).unwrap().level());
+    }
+}
+
+pub struct ScreenSelectLevelPackEditor {
+    is_creating_new_level_pack: bool,
+    new_level_pack_id: String,
+    new_level_pack_error_message: String,
+}
+
+impl ScreenSelectLevelPackEditor {
+    pub fn new() -> Self {
+        Self {
+            is_creating_new_level_pack: Default::default(),
+            new_level_pack_id: String::new(),
+            new_level_pack_error_message: String::new(),
+        }
+    }
+}
+
+impl Screen for ScreenSelectLevelPackEditor {
+    fn draw(&self, game_state: &GameState, console: &Console) {
+        console.reset_color();
+        console.set_underline(true);
+        console.draw_text("Edit a level pack:");
+        console.set_underline(false);
+
+        //Include Create Level Pack entry
+        let entry_count = game_state.editor_state.get_level_pack_count() + 1;
+
+        //Draw first line
+        console.set_cursor_pos(0, 1);
+        console.draw_text("-");
+        let mut max = entry_count%24;
+        if entry_count/24 > 0 {
+            max = 24;
+        }
+
+        for i in 0..max  {
+            let x = 1 + (i%24)*3;
+
+            console.set_cursor_pos(x, 1);
+            console.draw_text("---");
+        }
+
+        for i in 0..entry_count {
+            let x = 1 + (i%24)*3;
+            let y = 2 + (i/24)*2;
+
+            //First box
+            if x == 1 {
+                console.set_cursor_pos(x - 1, y);
+                console.draw_text("|");
+
+                console.set_cursor_pos(x - 1, y + 1);
+                console.draw_text("-");
+            }
+
+            console.set_cursor_pos(x, y);
+            if i == game_state.editor_state.get_level_pack_count() {
+                //Level Pack Editor entry
+                console.set_color(Color::White, Color::LightBlue);
+                console.draw_text(" +");
+            }else {
+                console.set_color(Color::Black, Color::Green);
+                console.draw_text(format!("{:2}", i + 1));
+            }
+
+            console.reset_color();
+            console.draw_text("|");
+
+            console.set_cursor_pos(x, y + 1);
+            console.draw_text("---");
+        }
+
+        //Mark selected level
+        let x = (game_state.editor_state.get_level_pack_index()%24)*3;
+        let y = 1 + (game_state.editor_state.get_level_pack_index()/24)*2;
+
+        console.set_color(Color::Cyan, Color::Default);
+        console.set_cursor_pos(x, y);
+        console.draw_text("----");
+        console.set_cursor_pos(x, y + 1);
+        console.draw_text("|");
+        console.set_cursor_pos(x + 3, y + 1);
+        console.draw_text("|");
+        console.set_cursor_pos(x, y + 2);
+        console.draw_text("----");
+
+        //Draw border for best time and best moves
+        let y = 4 + (entry_count/24)*2;
+
+        console.set_cursor_pos(0, y);
+        console.set_color(Color::Cyan, Color::Default);
+        console.draw_text(".------------------------------------------------------------------------.");
+        for i in 1..4 {
+            console.set_cursor_pos(0, y + i);
+            console.draw_text("|                                                                        |");
+        }
+        console.set_cursor_pos(0, y + 4);
+        console.draw_text("\'------------------------------------------------------------------------\'");
+        console.reset_color();
+
+        if self.is_creating_new_level_pack {
+            console.set_cursor_pos(1, y + 1);
+            console.draw_text("Enter a new level pack ID:");
+
+            console.set_cursor_pos(1, y + 2);
+            console.draw_text(format!("> {}", &self.new_level_pack_id));
+
+            console.set_cursor_pos(1, y + 3);
+            console.set_color(Color::Red, Color::Default);
+            console.draw_text(&self.new_level_pack_error_message);
+        }else if game_state.editor_state.get_level_pack_index() == game_state.editor_state.get_level_pack_count() {
+            //Level Pack Editor entry
+            console.set_cursor_pos(29, y + 2);
+            console.draw_text("Create level pack");
+        }else {
+            console.set_cursor_pos(1, y + 1);
+            console.draw_text(format!("Level Pack ID: {}", game_state.editor_state.get_current_level_pack().unwrap().id()));
+
+            console.set_cursor_pos(1, y + 2);
+            console.draw_text(format!("Levels: {}", game_state.editor_state.get_current_level_pack().unwrap().level_count()));
+        }
+    }
+
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
+        if self.is_creating_new_level_pack {
+            match key {
+                key if (0..=127).contains(&key) &&
+                        ((key as u8 as char).is_alphanumeric() || key as u8 == b'_' || key as u8 == b'-') => {
+                    if self.new_level_pack_id.len() >= Game::MAX_LEVEL_PACK_ID_LEN {
+                        return;
+                    }
+                    
+                    self.new_level_pack_id += &format!("{}", key as u8 as char);
+                },
+                keys::DELETE => {
+                    self.new_level_pack_id.pop();
+                },
+
+                keys::ENTER => {
+                    self.new_level_pack_error_message = String::new();
+                    if self.new_level_pack_id.len() < 3 {
+                        self.new_level_pack_error_message = String::from("Level pack ID must have at least 3 characters!");
+
+                        return;
+                    }
+
+                    //TODO check if does not already exist and open level pack editor
+
+                    let Ok(mut save_game_file) = Game::get_or_create_save_game_folder() else {
+                        //TODO error popup
+                        todo!();
+                    };
+                    save_game_file.push(&self.new_level_pack_id);
+                    save_game_file.push(".lvl.edit");
+
+                    let Some(save_game_file) = save_game_file.to_str() else {
+                        //TODO error popup
+                        todo!();
+                    };
+
+                    game_state.editor_state.level_packs.push(LevelPack::new(&self.new_level_pack_id, save_game_file));
+                    game_state.editor_state.set_level_index(0);
+
+                    //TODO save in save game folder
+
+                    self.is_creating_new_level_pack = false;
+                    self.new_level_pack_id = String::new();
+
+                    game_state.editor_state.set_level_index(0);
+                    game_state.set_screen(ScreenId::LevelPackEditor);
+                },
+
+                keys::ESC => {
+                    self.is_creating_new_level_pack = false;
+                    self.new_level_pack_id = String::new();
+                    self.new_level_pack_error_message = String::new();
+                },
+
+                _ => {},
+            }
+
+            return;
+        }
+
+        if key == keys::ESC {
+            game_state.set_screen(ScreenId::SelectLevelPack);
+
+            return;
+        }
+
+        if key == keys::F1 {
+            game_state.open_help_page();
+
+            return;
+        }
+
+        //TODO handle enter
+
+        'outer: {
+            //Include Level Pack Editor entry
+            let entry_count = game_state.editor_state.get_level_pack_count() + 1;
+
+            match key {
+                keys::LEFT => {
+                    if game_state.editor_state.selected_level_pack_index == 0 {
+                        break 'outer;
+                    }
+
+                    game_state.editor_state.selected_level_pack_index -= 1;
+                },
+                keys::UP => {
+                    if game_state.editor_state.selected_level_pack_index <= 24 {
+                        break 'outer;
+                    }
+
+                    game_state.editor_state.selected_level_pack_index -= 24;
+                },
+                keys::RIGHT => {
+                    if game_state.editor_state.selected_level_pack_index + 1 >= entry_count {
+                        break 'outer;
+                    }
+
+                    game_state.editor_state.selected_level_pack_index += 1;
+                },
+                keys::DOWN => {
+                    if game_state.editor_state.selected_level_pack_index + 24 >= entry_count {
+                        break 'outer;
+                    }
+
+                    game_state.editor_state.selected_level_pack_index += 24;
+                },
+
+                keys::ENTER => {
+                    if game_state.editor_state.selected_level_pack_index == game_state.editor_state.get_level_pack_count() {
+                        //Level Pack Editor entry
+                        self.is_creating_new_level_pack = true;
+                    }else {
+                        //Set selected level pack
+                        game_state.editor_state.set_level_index(0);
+                        game_state.set_screen(ScreenId::LevelPackEditor);
+                    }
+                },
+
+                _ => {},
+            }
+        }
+    }
+
+    fn on_mouse_pressed(&mut self, game_state: &mut GameState, column: usize, row: usize) {
+        if row == 0 {
+            return;
+        }
+        //Include Level Pack Editor entry
+        let entry_count = game_state.editor_state.get_level_pack_count() + 1;
+
+        let level_pack_index = column/3 + (row - 1)/2*24;
+        if level_pack_index < entry_count {
+            game_state.editor_state.selected_level_pack_index = level_pack_index;
+            self.on_key_pressed(game_state, keys::ENTER);
+        }
+    }
+}
+
+pub struct ScreenLevelPackEditor {
+    is_creating_new_level: bool,
+    is_editing_height: bool,
+    is_deleting_level: bool,
+    new_level_width_str: String,
+    new_level_height_str: String,
+    new_level_error_message: String,
+}
+
+impl ScreenLevelPackEditor {
+    pub fn new() -> Self {
+        Self {
+            is_creating_new_level: Default::default(),
+            is_editing_height: Default::default(),
+            is_deleting_level: Default::default(),
+            new_level_width_str: String::new(),
+            new_level_height_str: String::new(),
+            new_level_error_message: String::new(),
+        }
+    }
+}
+
+impl Screen for ScreenLevelPackEditor {
+    fn draw(&self, game_state: &GameState, console: &Console) {
+        console.reset_color();
+        console.set_underline(true);
+        console.draw_text(format!("Edit a level (Level pack \"{}\"):", game_state.editor_state.get_current_level_pack().unwrap().id()));
+        console.set_underline(false);
+
+        //Include Create Level entry
+        let entry_count = game_state.editor_state.get_current_level_pack().unwrap().level_count() + 1;
+
+        //Draw first line
+        console.set_cursor_pos(0, 1);
+        console.draw_text("-");
+        let mut max = entry_count%24;
+        if entry_count/24 > 0 {
+            max = 24;
+        }
+
+        for i in 0..max  {
+            let x = 1 + (i%24)*3;
+
+            console.set_cursor_pos(x, 1);
+            console.draw_text("---");
+        }
+
+        for i in 0..entry_count {
+            let x = 1 + (i%24)*3;
+            let y = 2 + (i/24)*2;
+
+            //First box
+            if x == 1 {
+                console.set_cursor_pos(x - 1, y);
+                console.draw_text("|");
+
+                console.set_cursor_pos(x - 1, y + 1);
+                console.draw_text("-");
+            }
+
+            console.set_cursor_pos(x, y);
+            if i == game_state.editor_state.get_current_level_pack().unwrap().level_count() {
+                //Level Pack entry
+                console.set_color(Color::White, Color::LightBlue);
+                console.draw_text(" +");
+            }else {
+                console.set_color(Color::Black, Color::Green);
+                if i + 1 < 100 {
+                    console.draw_text(format!("{:2}", i + 1));
+                }else {
+                    console.draw_text(format!("{}", (b'A' + (i as u8 + 1 - 100) / 10) as char));
+                    console.draw_text(format!("{}", (i + 1) % 10));
+                }
+            }
+
+            console.reset_color();
+            console.draw_text("|");
+
+            console.set_cursor_pos(x, y + 1);
+            console.draw_text("---");
+        }
+
+        //Mark selected level
+        let x = (game_state.editor_state.get_level_index()%24)*3;
+        let y = 1 + (game_state.editor_state.get_level_index()/24)*2;
+
+        console.set_color(Color::Cyan, Color::Default);
+        console.set_cursor_pos(x, y);
+        console.draw_text("----");
+        console.set_cursor_pos(x, y + 1);
+        console.draw_text("|");
+        console.set_cursor_pos(x + 3, y + 1);
+        console.draw_text("|");
+        console.set_cursor_pos(x, y + 2);
+        console.draw_text("----");
+
+        //Draw border for best time and best moves
+        let y = 4 + (entry_count/24)*2;
+
+        console.set_cursor_pos(0, y);
+        console.set_color(Color::Cyan, Color::Default);
+        console.draw_text(".------------------------------------------------------------------------.");
+        for i in 1..4 {
+            console.set_cursor_pos(0, y + i);
+            console.draw_text("|                                                                        |");
+        }
+        console.set_cursor_pos(0, y + 4);
+        console.draw_text("\'------------------------------------------------------------------------\'");
+        console.reset_color();
+
+        if self.is_creating_new_level {
+            console.set_cursor_pos(1, y + 1);
+            console.draw_text("Enter width and height for new level:");
+
+            console.set_color(if self.is_editing_height {
+                Color::LightBlue
+            }else {
+                Color::Cyan
+            }, Color::Default);
+            console.set_cursor_pos(1, y + 2);
+            console.draw_text(format!("Width: {}", &self.new_level_width_str));
+
+            console.set_color(if self.is_editing_height {
+                Color::Cyan
+            }else {
+                Color::LightBlue
+            }, Color::Default);
+            console.set_cursor_pos(14, y + 2);
+            console.draw_text(format!("Height: {}", &self.new_level_height_str));
+
+            console.set_cursor_pos(1, y + 3);
+            console.set_color(Color::Red, Color::Default);
+            console.draw_text(&self.new_level_error_message);
+        }else if game_state.editor_state.get_level_index() == game_state.editor_state.get_current_level_pack().unwrap().level_count() {
+            //Level Pack Editor entry
+            console.set_cursor_pos(29, y + 2);
+            console.draw_text("Create level");
+        }else {
+            //Draw best time and best moves
+            console.set_cursor_pos(1, y + 1);
+            console.draw_text("Selected level: ");
+            let selected_level = game_state.editor_state.selected_level_index;
+            if selected_level + 1 < 100 {
+                console.draw_text(format!("{:02}", selected_level + 1));
+            }else {
+                console.draw_text(format!("{}", (b'A' + (selected_level as u8 + 1 - 100) / 10) as char));
+                console.draw_text(format!("{}", (selected_level + 1) % 10));
+            }
+
+            console.set_cursor_pos(1, y + 2);
+            console.draw_text(format!(
+                "Size: {} x {}",
+                game_state.editor_state.get_current_level().unwrap().width(),
+                game_state.editor_state.get_current_level().unwrap().height(),
+            ));
+        }
+    }
+
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
+        if game_state.is_dialog_opened() {
+            if self.is_deleting_level {
+                if key == b'y' as i32 {
+                    game_state.close_dialog();
+
+                    let index = game_state.editor_state.selected_level_index;
+                    game_state.editor_state.get_current_level_pack_mut().unwrap().levels_mut().remove(index);
+                    if let Err(err) = game_state.editor_state.get_current_level_pack().unwrap().save_editor_level_pack() {
+                        //TODO open dialog
+
+                        todo!()
+                    }
+
+                    self.is_deleting_level = false;
+                }else if key == b'n' as i32 {
+                    game_state.close_dialog();
+
+                    self.is_deleting_level = false;
+                }
+            }
+
+            return;
+        }
+
+        if self.is_creating_new_level {
+            match key {
+                key if (0..=127).contains(&key) && ((key as u8 as char).is_numeric()) => {
+                    if self.is_editing_height {
+                        if self.new_level_height_str.len() >= 2 {
+                            return;
+                        }
+
+                        self.new_level_height_str += &format!("{}", key as u8 as char);
+                    }else {
+                        if self.new_level_width_str.len() >= 2 {
+                            return;
+                        }
+
+                        self.new_level_width_str += &format!("{}", key as u8 as char);
+                    }
+                },
+                keys::DELETE => {
+                    if self.is_editing_height {
+                        self.new_level_height_str.pop();
+                    }else {
+                        self.new_level_width_str.pop();
+                    }
+                },
+
+                keys::TAB => {
+                    self.is_editing_height = !self.is_editing_height;
+                },
+
+                keys::ENTER => {
+                    self.new_level_error_message = String::new();
+                    if !(1..=2).contains(&self.new_level_width_str.len()) {
+                        self.new_level_error_message = format!("Width must be >= 3 and <= {}!", Game::CONSOLE_MIN_WIDTH);
+
+                        return;
+                    }
+
+                    let Ok(width) = usize::from_str(&self.new_level_width_str) else {
+                        self.new_level_error_message = String::from("Width must be a number");
+
+                        return;
+                    };
+
+                    if !(3..=Game::CONSOLE_MIN_WIDTH).contains(&width) {
+                        self.new_level_error_message = format!("Width must be >= 3 and <= {}!", Game::CONSOLE_MIN_WIDTH);
+
+                        return;
+                    }
+
+                    if !(1..=2).contains(&self.new_level_height_str.len()) {
+                        self.new_level_error_message = format!("Height must be >= 3 and <= {}!", Game::CONSOLE_MIN_HEIGHT - 1);
+
+                        return;
+                    }
+
+                    let Ok(height) = usize::from_str(&self.new_level_height_str) else {
+                        self.new_level_error_message = String::from("Height must be a number");
+
+                        return;
+                    };
+
+                    if !(3..Game::CONSOLE_MIN_HEIGHT).contains(&height) {
+                        self.new_level_error_message = format!("Height must be >= 3 and <= {}!", Game::CONSOLE_MIN_HEIGHT - 1);
+
+                        return;
+                    }
+
+                    game_state.editor_state.get_current_level_pack_mut().unwrap().add_level(Level::new(width, height));
+
+                    //TODO save
+
+                    self.is_creating_new_level = false;
+                    self.is_editing_height = false;
+                    self.is_deleting_level = false;
+                    self.new_level_width_str = String::new();
+                    self.new_level_height_str = String::new();
+
+                    game_state.set_screen(ScreenId::LevelEditor);
+                },
+
+                keys::ESC => {
+                    self.is_creating_new_level = false;
+                    self.is_editing_height = false;
+                    self.is_deleting_level = false;
+                    self.new_level_width_str = String::new();
+                    self.new_level_height_str = String::new();
+                    self.new_level_error_message = String::new();
+                },
+
+                _ => {},
+            }
+
+            return;
+        }
+
+        if key == keys::ESC {
+            game_state.set_screen(ScreenId::SelectLevelPackEditor);
+
+            return;
+        }
+
+        if key == keys::F1 {
+            game_state.open_help_page();
+
+            return;
+        }
+
+        //TODO handle enter
+
+        'outer: {
+            //Include Level Pack Editor entry
+            let entry_count = game_state.editor_state.get_current_level_pack().unwrap().level_count() + 1;
+
+            match key {
+                keys::LEFT => {
+                    if game_state.editor_state.selected_level_index == 0 {
+                        break 'outer;
+                    }
+
+                    game_state.editor_state.selected_level_index -= 1;
+                },
+                keys::UP => {
+                    if game_state.editor_state.selected_level_index <= 24 {
+                        break 'outer;
+                    }
+
+                    game_state.editor_state.selected_level_index -= 24;
+                },
+                keys::RIGHT => {
+                    if game_state.editor_state.selected_level_index + 1 >= entry_count {
+                        break 'outer;
+                    }
+
+                    game_state.editor_state.selected_level_index += 1;
+                },
+                keys::DOWN => {
+                    if game_state.editor_state.selected_level_index + 24 >= entry_count {
+                        break 'outer;
+                    }
+
+                    game_state.editor_state.selected_level_index += 24;
+                },
+
+                keys::ENTER => {
+                    if game_state.editor_state.selected_level_index == game_state.editor_state.get_current_level_pack().unwrap().level_count() {
+                        //Level Pack entry
+                        self.is_creating_new_level = true;
+                    }else {
+                        //Set selected level
+                        game_state.set_screen(ScreenId::LevelEditor);
+                    }
+                },
+
+                keys::DELETE => {
+                    if game_state.editor_state.selected_level_index != game_state.editor_state.get_current_level_pack().unwrap().level_count() {
+                        self.is_deleting_level = true;
+
+                        game_state.open_dialog(Dialog::new(format!("Do you really want to delete level {}?", game_state.editor_state.selected_level_index + 1)));
+                    }
+                },
+
+                _ => {},
+            }
+        }
+    }
+
+    fn on_mouse_pressed(&mut self, game_state: &mut GameState, column: usize, row: usize) {
+        if row == 0 {
+            return;
+        }
+
+        //Include create Level entry
+        let entry_count = game_state.editor_state.get_current_level_pack().unwrap().level_count() + 1;
+
+        let level_pack_index = column/3 + (row - 1)/2*24;
+        if level_pack_index < entry_count {
+            game_state.editor_state.selected_level_index = level_pack_index;
+            self.on_key_pressed(game_state, keys::ENTER);
+        }
+    }
+}
+
+pub struct ScreenLevelEditor {
+    level: Option<Level>,
+    is_vertical_input: bool,
+    is_reverse_input: bool,
+    playing_level: Option<Level>,
+    cursor_pos: (usize, usize),
+    player_pos: (usize, usize),
+}
+
+impl ScreenLevelEditor {
+    pub fn new() -> Self {
+        Self {
+            level: Default::default(),
+            is_vertical_input: Default::default(),
+            is_reverse_input: Default::default(),
+            playing_level: Default::default(),
+            cursor_pos: Default::default(),
+            player_pos: Default::default(),
+        }
+    }
+
+    fn on_key_pressed_playing(&mut self, key: i32) {
+        if let Some(level) = self.playing_level.as_mut() {
+            if console_lib::is_arrow_key(key) {
+                let width = level.width();
+                let height = level.height();
+
+                let (x_from, y_from) = self.player_pos;
+
+                let x_to = match key {
+                    keys::LEFT => if x_from == 0 {
+                        width - 1
+                    }else {
+                        x_from - 1
+                    },
+                    keys::RIGHT => if x_from == width - 1 {
+                        0
+                    }else {
+                        x_from + 1
+                    },
+                    _ => x_from,
+                };
+                let y_to = match key {
+                    keys::UP => if y_from == 0 {
+                        height - 1
+                    }else {
+                        y_from - 1
+                    },
+                    keys::DOWN => if y_from == height - 1 {
+                        0
+                    }else {
+                        y_from + 1
+                    },
+                    _ => y_from,
+                };
+
+                let one_way_door_tile = match key {
+                    keys::LEFT => Tile::OneWayLeft,
+                    keys::UP => Tile::OneWayUp,
+                    keys::RIGHT => Tile::OneWayRight,
+                    keys::DOWN => Tile::OneWayDown,
+                    _ => return, //Should never happen
+                };
+
+                //Set players old position to old level data
+                let mut tile = self.level.as_ref().unwrap().get_tile(x_from, y_from).unwrap().clone();
+                if tile == Tile::Player || tile == Tile::Box || tile == Tile::Key || tile == Tile::LockedDoor {
+                    tile = Tile::Empty;
+                }else if tile == Tile::BoxInGoal || tile == Tile::KeyInGoal {
+                    tile = Tile::Goal;
+                }
+
+                level.set_tile(x_from, y_from, tile);
+
+                let mut has_won = false;
+                let tile = level.get_tile(x_to, y_to).unwrap().clone();
+                if matches!(tile, Tile::Empty | Tile::Goal | Tile::Secret) || tile == one_way_door_tile {
+                    self.player_pos = (x_to, y_to);
+                }else if matches!(tile, Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if level.move_box_or_key(
+                    self.level.as_ref().unwrap(),
+                    &mut has_won, x_from, y_from, x_to, y_to
+                )) {
+                    self.player_pos = (x_to, y_to);
+                }
+
+                //Set player to new position
+                level.set_tile(self.player_pos.0, self.player_pos.1, Tile::Player);
+
+                //Copy level to last step if change
+                if self.player_pos != (x_from, y_from) {
+                    //TODO moves += 1
+                }
+            }
+        }
+    }
+
+    fn on_key_pressed_editing(&mut self, key: i32) {
+        match key {
+            keys::LEFT => {
+                if self.cursor_pos.0 > 0 {
+                    self.cursor_pos.0 -= 1;
+                }else if let Some(ref level) = self.level {
+                    self.cursor_pos.0 = level.width() - 1;
+                }
+            },
+            keys::UP => {
+                if self.cursor_pos.1 > 0 {
+                    self.cursor_pos.1 -= 1;
+                }else if let Some(ref level) = self.level {
+                    self.cursor_pos.1 = level.height() - 1;
+                }
+            },
+            keys::RIGHT => {
+                if self.level.as_ref().is_some_and(|level| self.cursor_pos.0 < level.width() - 1) {
+                    self.cursor_pos.0 += 1;
+                }else {
+                    self.cursor_pos.0 = 0;
+                }
+            },
+            keys::DOWN => {
+                if self.level.as_ref().is_some_and(|level| self.cursor_pos.1 < level.height() - 1) {
+                    self.cursor_pos.1 += 1;
+                }else {
+                    self.cursor_pos.1 = 0;
+                }
+            },
+
+            _ => {},
+        }
+
+
+        if (0..=127).contains(&key) {
+            let tile = self.level.as_mut().unwrap().get_tile_mut(self.cursor_pos.0, self.cursor_pos.1).unwrap();
+
+            match key as u8 {
+                key @ (b'd' | b'w' | b'a' | b's') => {
+                    self.is_vertical_input = key == b'w' || key == b's';
+                    self.is_reverse_input = key == b'w' || key == b'a';
+
+                    return;
+                },
+
+                key => {
+                    if let Ok(tile_input) = Tile::from_ascii(key) {
+                        if tile_input != Tile::Secret {
+                            *tile = tile_input;
+                        }
+                    }
+                }
+            }
+
+            if self.is_vertical_input {
+                self.on_key_pressed_editing(if self.is_reverse_input {
+                    keys::UP
+                }else {
+                    keys::DOWN
+                });
+            }else {
+                self.on_key_pressed_editing(if self.is_reverse_input {
+                    keys::LEFT
+                }else {
+                    keys::RIGHT
+                });
+            }
+        }
+    }
+}
+
+impl Screen for ScreenLevelEditor {
+    fn draw(&self, game_state: &GameState, console: &Console) {
+        console.reset_color();
+        if self.playing_level.is_some() {
+            console.draw_text("Playing");
+
+            //TODO (Moves, time, ...)
+        }else {
+            console.draw_text(format!(
+                "Editing ({})",
+                match self.is_vertical_input {
+                    true if self.is_reverse_input => "^",
+                    true => "v",
+                    false if self.is_reverse_input => "<",
+                    false => ">",
+                }
+            ));
+
+            console.set_cursor_pos(((Game::CONSOLE_MIN_WIDTH - 14) as f64 * 0.5) as usize, 0);
+            console.draw_text(format!("Cursor ({:02}:{:02})", self.cursor_pos.0 + 1, self.cursor_pos.1 + 1));
+        }
+
+        if let Some(ref level) = self.level {
+            let x_offset = ((Game::CONSOLE_MIN_WIDTH - level.width()) as f64 * 0.5) as usize;
+            let y_offset = 1;
+
+            self.playing_level.as_ref().map_or(level, |level| level).
+                    draw(console, x_offset, y_offset, game_state.is_player_background(),
+                         self.playing_level.as_ref().map_or(Some(self.cursor_pos), |_| None));
+        }
+    }
+
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
+        if game_state.is_dialog_opened() {
+            if key == b'y' as i32 {
+                game_state.close_dialog();
+
+                *game_state.editor_state.get_current_level_mut().unwrap() = self.level.take().unwrap();
+                if let Err(err) = game_state.editor_state.get_current_level_pack().unwrap().save_editor_level_pack() {
+                    //TODO open dialog
+
+                    todo!()
+                }
+
+                game_state.set_screen(ScreenId::LevelPackEditor);
+            }else if key == b'n' as i32 {
+                game_state.close_dialog();
+
+                self.level = None;
+
+                game_state.set_screen(ScreenId::LevelPackEditor);
+            }
+
+            return;
+        }
+
+        if key == keys::ESC {
+            game_state.open_dialog(Dialog::new("Exiting (Save changed?)"));
+
+            return;
+        }
+
+        if key == b'r' as i32 {
+            self.playing_level = if self.playing_level.is_some() {
+                None
+            }else {
+                'outer:
+                for i in 0..self.level.as_ref().unwrap().width() {
+                    for j in 0..self.level.as_ref().unwrap().height() {
+                        if let Some(tile) = self.level.as_ref().unwrap().get_tile(i, j) {
+                            if *tile == Tile::Player {
+                                self.player_pos = (i, j);
+
+                                break 'outer;
+                            }
+                        }
+                    }
+                }
+
+                //TODO error if no player found
+                //TODO error if more than one player found
+
+                self.level.clone()
+            };
+
+            return;
+        }
+
+        if self.playing_level.is_none() {
+            self.on_key_pressed_editing(key);
+        }else {
+            self.on_key_pressed_playing(key);
+        }
+    }
+
+    fn on_mouse_pressed(&mut self, game_state: &mut GameState, column: usize, row: usize) {
+        if row == 0 || self.playing_level.is_some() {
+            return;
+        }
+
+        if let Some(ref level) = self.level {
+            let x_offset = ((Game::CONSOLE_MIN_WIDTH - level.width()) as f64 * 0.5) as usize;
+            let y_offset = 1;
+
+            if column < x_offset {
+                return;
+            }
+
+            let x = column - x_offset;
+            if x >= level.width() {
+                return;
+            }
+
+            let y = row - y_offset;
+            if y >= level.height() {
+                return;
+            }
+
+            self.cursor_pos = (x, y);
+        }
+    }
+
+    fn on_set_screen(&mut self, game_state: &mut GameState) {
+        self.is_vertical_input = false;
+        self.is_reverse_input = false;
+        self.playing_level = None;
+        self.cursor_pos = (0, 0);
+        self.player_pos = (0, 0);
+
+        self.level = Some(game_state.editor_state.get_current_level().unwrap().clone());
     }
 }

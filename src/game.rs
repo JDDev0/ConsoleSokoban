@@ -8,12 +8,68 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use crate::game::help_page::HelpPage;
-use crate::game::level::LevelPack;
-use crate::game::screen::{Dialog, Screen, ScreenId, ScreenInGame, ScreenSelectLevel, ScreenSelectLevelPack, ScreenStartMenu};
+use crate::game::level::{Level, LevelPack};
+use crate::game::screen::{Dialog, Screen, ScreenId, ScreenInGame, ScreenSelectLevelPackEditor, ScreenSelectLevel, ScreenSelectLevelPack, ScreenStartMenu, ScreenLevelPackEditor, ScreenLevelEditor};
 
 mod level;
 mod screen;
 mod help_page;
+
+struct EditorState {
+    level_packs: Vec<LevelPack>,
+    selected_level_pack_index: usize,
+    selected_level_index: usize,
+}
+
+impl EditorState {
+    pub fn new(level_packs: Vec<LevelPack>) -> Self {
+        Self {
+            level_packs,
+            selected_level_pack_index: Default::default(),
+            selected_level_index: Default::default(),
+        }
+    }
+
+    pub fn get_level_pack_count(&self) -> usize {
+        self.level_packs.len()
+    }
+
+    pub fn get_level_pack_index(&self) -> usize {
+        self.selected_level_pack_index
+    }
+
+    pub fn get_current_level_pack(&self) -> Option<&LevelPack> {
+        self.level_packs.get(self.selected_level_pack_index)
+    }
+
+    pub fn get_current_level_pack_mut(&mut self) -> Option<&mut LevelPack> {
+        self.level_packs.get_mut(self.selected_level_pack_index)
+    }
+
+    pub fn set_level_pack_index(&mut self, level_pack_index: usize) {
+        self.selected_level_pack_index = level_pack_index;
+    }
+
+    pub fn get_level_index(&self) -> usize {
+        self.selected_level_index
+    }
+
+    pub fn set_level_index(&mut self, level_index: usize) {
+        self.selected_level_index = level_index;
+    }
+
+    pub fn get_current_level(&self) -> Option<&Level> {
+        self.level_packs.get(self.selected_level_pack_index).
+                and_then(|level_pack| level_pack.levels().get(self.selected_level_index)).
+                map(|level_with_stats| level_with_stats.level())
+    }
+
+    pub fn get_current_level_mut(&mut self) -> Option<&mut Level> {
+        self.level_packs.get_mut(self.selected_level_pack_index).
+                and_then(|level_pack| level_pack.levels_mut().get_mut(self.selected_level_index)).
+                map(|level_with_stats| level_with_stats.level_mut())
+    }
+}
 
 struct GameState {
     current_screen_id: ScreenId,
@@ -31,10 +87,12 @@ struct GameState {
     player_background_tmp: i32,
 
     should_exit: bool,
+
+    editor_state: EditorState,
 }
 
 impl GameState {
-    fn new(level_packs: Vec<LevelPack>) -> Self {
+    fn new(level_packs: Vec<LevelPack>, editor_level_packs: Vec<LevelPack>) -> Self {
         Self {
             current_screen_id: ScreenId::StartMenu,
             should_call_on_set_screen: Default::default(),
@@ -51,6 +109,8 @@ impl GameState {
             player_background_tmp: Default::default(),
 
             should_exit: Default::default(),
+
+            editor_state: EditorState::new(editor_level_packs),
         }
     }
 
@@ -76,7 +136,7 @@ impl GameState {
     }
 
     pub fn get_current_level_pack(&self) -> Option<&LevelPack> {
-        self.level_packs.get(self.get_level_pack_index())
+        self.level_packs.get(self.current_level_pack_index)
     }
 
     pub fn get_current_level_pack_mut(&mut self) -> Option<&mut LevelPack> {
@@ -135,6 +195,8 @@ impl <'a> Game<'a> {
     pub const CONSOLE_MIN_WIDTH: usize = 74;
     pub const CONSOLE_MIN_HEIGHT: usize = 23;
 
+    pub const MAX_LEVEL_PACK_ID_LEN: usize = 32;
+
     const PLAYER_BACKGROUND_DELAY: i32 = 12;
 
     const SAVE_GAME_FOLDER: &'static str = "ConsoleSokoban";
@@ -179,9 +241,15 @@ impl <'a> Game<'a> {
 
         let screens = HashMap::from_iter([
             (ScreenId::StartMenu, Box::new(ScreenStartMenu::new()) as Box<dyn Screen>),
+
             (ScreenId::SelectLevelPack, Box::new(ScreenSelectLevelPack::new()) as Box<dyn Screen>),
             (ScreenId::SelectLevel, Box::new(ScreenSelectLevel::new()) as Box<dyn Screen>),
+
             (ScreenId::InGame, Box::new(ScreenInGame::new()) as Box<dyn Screen>),
+
+            (ScreenId::SelectLevelPackEditor, Box::new(ScreenSelectLevelPackEditor::new()) as Box<dyn Screen>),
+            (ScreenId::LevelPackEditor, Box::new(ScreenLevelPackEditor::new()) as Box<dyn Screen>),
+            (ScreenId::LevelEditor, Box::new(ScreenLevelEditor::new()) as Box<dyn Screen>),
         ]);
 
         let mut level_packs = Vec::with_capacity(LevelPack::MAX_LEVEL_PACK_COUNT);
@@ -236,10 +304,62 @@ impl <'a> Game<'a> {
             };
 
             let level_pack_id = &level_pack_file_name[..level_pack_file_name.len() - 4];
+            if level_pack_id.len() > Self::MAX_LEVEL_PACK_ID_LEN {
+                return Err(Box::new(GameError::new(format!(
+                    "Error while loading level pack \"{}\": Level pack ID is too long (Max: {})",
+                    arg, Self::MAX_LEVEL_PACK_ID_LEN
+                ))));
+            }
+
             level_packs.push(LevelPack::read_from_save_game(level_pack_id, &arg, level_pack_data)?);
         }
 
-        //TODO check if any level is too large
+        //TODO check if any level is too large (Normal levels)
+        /*
+                //"height >=", 1st line: infos
+                if(width > gameMinWidth || height >= gameMinHeight) {
+                    reset();
+                    printf("Level is too large (Max: %d x %d) (Level: %d x %d)!\n", gameMinWidth,
+                    gameMinHeight - 1, width, height);
+
+                    exit(EXIT_FAILURE);
+                }
+         */
+
+        let mut editor_level_packs = Vec::with_capacity(LevelPack::MAX_LEVEL_PACK_COUNT);
+
+        //TODO error handling (Add editor level pack to output)
+        let save_game_folder = Game::get_or_create_save_game_folder()?;
+        for entry in std::fs::read_dir(save_game_folder)?.
+                filter(|entry| entry.as_ref().
+                        is_ok_and(|entry| entry.path().is_file())).
+                map(|entry| entry.unwrap()) {
+            if entry.file_name().to_str().is_some_and(|file_name| file_name.ends_with(".lvl.edit")) {
+                let file_name = entry.file_name();
+                let file_name = file_name.to_str().unwrap();
+                let level_pack_id = &file_name[..file_name.len() - 9];
+
+                let mut level_pack_file = match File::open(entry.path()) {
+                    Ok(file) => file,
+                    Err(err) => return Err(Box::new(GameError::new(format!(
+                        "Error while loading editor level pack \"{}\": {}",
+                        file_name, err
+                    )))),
+                };
+
+                let mut level_pack_data = String::new();
+                if let Err(err) = level_pack_file.read_to_string(&mut level_pack_data) {
+                    return Err(Box::new(GameError::new(format!(
+                        "Error while loading level pack \"{}\": {}",
+                        file_name, err
+                    ))));
+                };
+
+                editor_level_packs.push(LevelPack::read_from_save_game(level_pack_id, entry.path().to_str().unwrap(), level_pack_data)?);
+            }
+        }
+
+        //TODO check if any level is too large (Editor levels)
         /*
                 //"height >=", 1st line: infos
                 if(width > gameMinWidth || height >= gameMinHeight) {
@@ -257,7 +377,7 @@ impl <'a> Game<'a> {
             screens,
             help_page: HelpPage::new(),
 
-            game_state: GameState::new(level_packs),
+            game_state: GameState::new(level_packs, editor_level_packs),
         })
     }
 
