@@ -454,6 +454,8 @@ impl <'a> Game<'a> {
                 }
             }
         }
+        
+        editor_level_packs.sort_by_key(|level_pack| level_pack.id().to_string());
 
         let mut game_state = GameState::new(level_packs, editor_level_packs);
 

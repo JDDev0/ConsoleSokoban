@@ -4,7 +4,7 @@ use std::mem;
 use std::str::FromStr;
 use std::time::SystemTime;
 use dialog::DialogYesNo;
-use crate::game::{Game, GameError, GameState};
+use crate::game::{Game, GameState};
 use crate::game::level::{Level, LevelPack, Tile};
 use crate::game::screen::dialog::{DialogOk, DialogSelection};
 
@@ -1279,12 +1279,17 @@ impl Screen for ScreenSelectLevelPackEditor {
                         game_state.open_dialog(DialogOk::new_error(format!("Can not save: {}", err)));
                     }
 
-                    game_state.editor_state.level_packs.push(level_pack);
-                    game_state.editor_state.set_level_index(0);
+                    let index = game_state.editor_state.level_packs.binary_search_by_key(
+                        &level_pack.id().to_string(),
+                        |level_pack| level_pack.id().to_string(),
+                    ).err().unwrap();
+
+                    game_state.editor_state.level_packs.insert(index, level_pack);
 
                     self.is_creating_new_level_pack = false;
                     self.new_level_pack_id = String::new();
 
+                    game_state.editor_state.set_level_pack_index(index);
                     game_state.editor_state.set_level_index(0);
                     game_state.set_screen(ScreenId::LevelPackEditor);
                 },
@@ -1622,8 +1627,6 @@ impl Screen for ScreenLevelPackEditor {
                     }
 
                     game_state.editor_state.get_current_level_pack_mut().unwrap().add_level(Level::new(width, height));
-
-                    //TODO save
 
                     self.is_creating_new_level = false;
                     self.is_editing_height = false;
