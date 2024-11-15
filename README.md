@@ -21,6 +21,5 @@ Windows:
 
 ### Compile & Run
 
-Compile & Run
 1. `cargo build`
 2. `cargo run`
