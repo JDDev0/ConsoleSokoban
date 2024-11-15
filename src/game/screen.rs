@@ -3,92 +3,12 @@ use std::cmp::Ordering;
 use std::mem;
 use std::str::FromStr;
 use std::time::SystemTime;
+use dialog::DialogYesNo;
 use crate::game::{Game, GameState};
 use crate::game::level::{Level, LevelPack, Tile};
+use crate::game::screen::dialog::DialogSelection;
 
-pub struct Dialog {
-    message: String
-}
-
-impl Dialog {
-    pub fn new(message: impl Into<String>) -> Self {
-        Self { message: message.into() }
-    }
-
-    pub fn draw(&self, console: &Console, console_width: usize, console_height: usize) {
-        let char_count = self.message.chars().count();
-
-        let width = char_count.max(16);
-        let width_with_border = width + 2;
-
-        let x_start = ((console_width - width_with_border) as f64 * 0.5) as usize;
-        let y_start = ((console_height - 6) as f64 * 0.5) as usize;
-
-        let whitespace_count_half = ((width - char_count) as f64 * 0.5) as usize;
-
-        console.set_color(Color::Black, Color::Yellow);
-        console.set_cursor_pos(x_start + 1, y_start + 1);
-        console.draw_text(format!(
-            "{}{}{}",
-            " ".repeat(whitespace_count_half),
-            self.message,
-            " ".repeat(width - char_count - whitespace_count_half),
-        ));
-
-        console.set_cursor_pos(x_start + 1, y_start + 2);
-        console.draw_text(format!(
-            "{}{}{}",
-            " ".repeat(whitespace_count_half),
-            "-".repeat(char_count),
-            " ".repeat(width - char_count - whitespace_count_half),
-        ));
-
-        console.set_cursor_pos(x_start + 1, y_start + 3);
-        console.draw_text(" ".repeat(width));
-
-        console.set_cursor_pos(x_start + 1, y_start + 4);
-        console.draw_text(format!(
-            "[y]es{}[n]o",
-            " ".repeat(width - 9),
-        ));
-
-        //Draw border
-        console.set_color(Color::LightBlack, Color::Red);
-        console.set_cursor_pos(x_start, y_start);
-        console.draw_text(" ".repeat(width_with_border));
-
-        console.set_cursor_pos(x_start, y_start + 5);
-        console.draw_text(" ".repeat(width_with_border));
-        for i in y_start+1..y_start+5 {
-            console.set_cursor_pos(x_start, i);
-            console.draw_text(" ");
-
-            console.set_cursor_pos(x_start + width_with_border - 1, i);
-            console.draw_text(" ");
-        }
-    }
-
-    ///Returns `Some(true)` if `[y]es` was pressed and `Some(false)` if `[n]o` was pressed else `None`
-    pub fn on_mouse_pressed(&self, console_width: usize, console_height: usize, column: usize, row: usize) -> Option<bool> {
-        let char_count = self.message.chars().count();
-
-        let width = char_count.max(16);
-        let width_with_border = width + 2;
-
-        let x_start = ((console_width - width_with_border) as f64 * 0.5) as usize;
-        let y_start = ((console_height - 6) as f64 * 0.5) as usize;
-
-        if row == y_start + 4 {
-            if (x_start + 1..x_start + 6).contains(&column) {
-                return Some(true);
-            }else if (x_start + width - 3..x_start + width + 1).contains(&column) {
-                return Some(false);
-            }
-        }
-
-        None
-    }
-}
+pub mod dialog;
 
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum ScreenId {
@@ -112,6 +32,8 @@ pub trait Screen {
 
     fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {}
     fn on_mouse_pressed(&mut self, game_state: &mut GameState, column: usize, row: usize) {}
+
+    fn on_dialog_selection(&mut self, game_state: &mut GameState, selection: DialogSelection) {}
 
     fn on_continue(&mut self, game_state: &mut GameState) {}
     fn on_set_screen(&mut self, game_state: &mut GameState) {}
@@ -185,21 +107,8 @@ impl Screen for ScreenStartMenu {
     }
 
     fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
-        if game_state.is_dialog_opened() {
-            if key == b'y' as i32 {
-                game_state.close_dialog();
-                game_state.exit();
-
-                return;
-            }else if key == b'n' as i32 {
-                game_state.close_dialog();
-            }
-
-            return;
-        }
-
         if key == keys::ESC {
-            game_state.open_dialog(Dialog::new("Exit game?"));
+            game_state.open_dialog(DialogYesNo::new("Exit game?"));
 
             return;
         }
@@ -216,16 +125,18 @@ impl Screen for ScreenStartMenu {
     }
 
     fn on_mouse_pressed(&mut self, game_state: &mut GameState, column: usize, row: usize) {
-        if game_state.is_dialog_opened() {
-            return;
-        }
-
         if row == 16 && column > 26 && column < 32 {
             self.on_key_pressed(game_state, keys::ENTER);
         }
 
         if row == 21 && column > 64 && column < 73 {
             game_state.open_help_page();
+        }
+    }
+
+    fn on_dialog_selection(&mut self, game_state: &mut GameState, selection: DialogSelection) {
+        if selection == DialogSelection::Yes {
+            game_state.exit();
         }
     }
 }
@@ -965,35 +876,6 @@ impl Screen for ScreenInGame {
     }
 
     fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
-        if game_state.is_dialog_opened() {
-            if self.secret_found_flag && (key == b'y' as i32 || key == b'n' as i32) {
-                game_state.close_dialog();
-
-                self.continue_flag = false;
-                self.game_over_flag = false;
-                self.secret_found_flag = false;
-
-                game_state.set_screen(ScreenId::SelectLevelPack);
-
-                return;
-            }
-
-            if key == b'y' as i32 || (self.secret_found_flag && key == b'n' as i32) {
-                game_state.close_dialog();
-
-                self.continue_flag = false;
-                self.game_over_flag = false;
-
-                game_state.set_screen(ScreenId::SelectLevel);
-            }else if key == b'n' as i32 {
-                game_state.close_dialog();
-
-                self.on_continue(game_state);
-            }
-
-            return;
-        }
-
         if key == keys::ESC {
             if self.game_over_flag {
                 self.continue_flag = false;
@@ -1006,7 +888,7 @@ impl Screen for ScreenInGame {
 
             self.time_start_in_menu = Some(SystemTime::now());
 
-            game_state.open_dialog(Dialog::new("Back to level selection?"));
+            game_state.open_dialog(DialogYesNo::new("Back to level selection?"));
 
             return;
         }
@@ -1165,12 +1047,33 @@ impl Screen for ScreenInGame {
             }
 
             if self.secret_found_flag {
-                game_state.open_dialog(Dialog::new("You have found a secret!"));
+                game_state.open_dialog(DialogYesNo::new("You have found a secret!"));
 
                 if let Err(err) = game_state.on_found_secret() {
                     //TODO show error dialog
                 }
             }
+        }
+    }
+
+    fn on_dialog_selection(&mut self, game_state: &mut GameState, selection: DialogSelection) {
+        if self.secret_found_flag {
+            self.continue_flag = false;
+            self.game_over_flag = false;
+            self.secret_found_flag = false;
+
+            game_state.set_screen(ScreenId::SelectLevelPack);
+
+            return;
+        }
+
+        if selection == DialogSelection::Yes {
+            self.continue_flag = false;
+            self.game_over_flag = false;
+
+            game_state.set_screen(ScreenId::SelectLevel);
+        }else if selection == DialogSelection::No {
+            self.on_continue(game_state);
         }
     }
 
@@ -1612,30 +1515,6 @@ impl Screen for ScreenLevelPackEditor {
     }
 
     fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
-        if game_state.is_dialog_opened() {
-            if self.is_deleting_level {
-                if key == b'y' as i32 {
-                    game_state.close_dialog();
-
-                    let index = game_state.editor_state.selected_level_index;
-                    game_state.editor_state.get_current_level_pack_mut().unwrap().levels_mut().remove(index);
-                    if let Err(err) = game_state.editor_state.get_current_level_pack().unwrap().save_editor_level_pack() {
-                        //TODO open dialog
-
-                        todo!()
-                    }
-
-                    self.is_deleting_level = false;
-                }else if key == b'n' as i32 {
-                    game_state.close_dialog();
-
-                    self.is_deleting_level = false;
-                }
-            }
-
-            return;
-        }
-
         if self.is_creating_new_level {
             match key {
                 key if (0..=127).contains(&key) && ((key as u8 as char).is_numeric()) => {
@@ -1793,7 +1672,7 @@ impl Screen for ScreenLevelPackEditor {
                     if game_state.editor_state.selected_level_index != game_state.editor_state.get_current_level_pack().unwrap().level_count() {
                         self.is_deleting_level = true;
 
-                        game_state.open_dialog(Dialog::new(format!("Do you really want to delete level {}?", game_state.editor_state.selected_level_index + 1)));
+                        game_state.open_dialog(DialogYesNo::new(format!("Do you really want to delete level {}?", game_state.editor_state.selected_level_index + 1)));
                     }
                 },
 
@@ -1814,6 +1693,24 @@ impl Screen for ScreenLevelPackEditor {
         if level_pack_index < entry_count {
             game_state.editor_state.selected_level_index = level_pack_index;
             self.on_key_pressed(game_state, keys::ENTER);
+        }
+    }
+
+    fn on_dialog_selection(&mut self, game_state: &mut GameState, selection: DialogSelection) {
+        if self.is_deleting_level {
+            if selection == DialogSelection::Yes {
+                let index = game_state.editor_state.selected_level_index;
+                game_state.editor_state.get_current_level_pack_mut().unwrap().levels_mut().remove(index);
+                if let Err(err) = game_state.editor_state.get_current_level_pack().unwrap().save_editor_level_pack() {
+                    //TODO open dialog
+
+                    todo!()
+                }
+
+                self.is_deleting_level = false;
+            }else if selection == DialogSelection::No {
+                self.is_deleting_level = false;
+            }
         }
     }
 }
@@ -2019,31 +1916,8 @@ impl Screen for ScreenLevelEditor {
     }
 
     fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
-        if game_state.is_dialog_opened() {
-            if key == b'y' as i32 {
-                game_state.close_dialog();
-
-                *game_state.editor_state.get_current_level_mut().unwrap() = self.level.take().unwrap();
-                if let Err(err) = game_state.editor_state.get_current_level_pack().unwrap().save_editor_level_pack() {
-                    //TODO open dialog
-
-                    todo!()
-                }
-
-                game_state.set_screen(ScreenId::LevelPackEditor);
-            }else if key == b'n' as i32 {
-                game_state.close_dialog();
-
-                self.level = None;
-
-                game_state.set_screen(ScreenId::LevelPackEditor);
-            }
-
-            return;
-        }
-
         if key == keys::ESC {
-            game_state.open_dialog(Dialog::new("Exiting (Save changed?)"));
+            game_state.open_dialog(DialogYesNo::new("Exiting (Save changed?)"));
 
             return;
         }
@@ -2105,6 +1979,23 @@ impl Screen for ScreenLevelEditor {
             }
 
             self.cursor_pos = (x, y);
+        }
+    }
+
+    fn on_dialog_selection(&mut self, game_state: &mut GameState, selection: DialogSelection) {
+        if selection == DialogSelection::Yes {
+            *game_state.editor_state.get_current_level_mut().unwrap() = self.level.take().unwrap();
+            if let Err(err) = game_state.editor_state.get_current_level_pack().unwrap().save_editor_level_pack() {
+                //TODO open dialog
+
+                todo!()
+            }
+
+            game_state.set_screen(ScreenId::LevelPackEditor);
+        }else if selection == DialogSelection::No {
+            self.level = None;
+
+            game_state.set_screen(ScreenId::LevelPackEditor);
         }
     }
 

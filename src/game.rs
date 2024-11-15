@@ -9,7 +9,8 @@ use std::io::Read;
 use std::path::Path;
 use crate::game::help_page::HelpPage;
 use crate::game::level::{Level, LevelPack};
-use crate::game::screen::{Dialog, Screen, ScreenId, ScreenInGame, ScreenSelectLevelPackEditor, ScreenSelectLevel, ScreenSelectLevelPack, ScreenStartMenu, ScreenLevelPackEditor, ScreenLevelEditor};
+use crate::game::screen::{Screen, ScreenId, ScreenInGame, ScreenLevelEditor, ScreenLevelPackEditor, ScreenSelectLevel, ScreenSelectLevelPack, ScreenSelectLevelPackEditor, ScreenStartMenu};
+use crate::game::screen::dialog::Dialog;
 
 mod level;
 mod screen;
@@ -76,7 +77,7 @@ struct GameState {
     should_call_on_set_screen: bool,
 
     is_help: bool,
-    dialog: Option<Dialog>,
+    dialog: Option<Box<dyn Dialog>>,
 
     current_level_pack_index: usize,
     level_packs: Vec<LevelPack>,
@@ -171,8 +172,8 @@ impl GameState {
         self.dialog.is_some()
     }
 
-    pub fn open_dialog(&mut self, dialog: Dialog) {
-        self.dialog = Some(dialog);
+    pub fn open_dialog(&mut self, dialog: impl Dialog + 'static) {
+        self.dialog = Some(Box::new(dialog));
     }
 
     pub fn close_dialog(&mut self) {
@@ -457,6 +458,19 @@ impl <'a> Game<'a> {
             return;
         }
 
+        if let Some(dialog) = self.game_state.dialog.as_ref() {
+            if let Some(dialog_selection) = dialog.on_key_pressed(Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT, key) {
+                self.game_state.close_dialog();
+
+                let screen = self.screens.get_mut(&self.game_state.current_screen_id);
+                if let Some(screen) = screen {
+                    screen.on_dialog_selection(&mut self.game_state, dialog_selection);
+                }
+            }
+
+            return;
+        }
+
         if let Some(screen) = screen {
             screen.on_key_pressed(&mut self.game_state, key);
         }
@@ -476,18 +490,15 @@ impl <'a> Game<'a> {
             return;
         }
 
-        let yes_no;
         if let Some(dialog) = self.game_state.dialog.as_ref() {
-            yes_no = dialog.on_mouse_pressed(Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT, column, row);
-        }else {
-            yes_no = None;
-        }
-        if let Some(yes_no) = yes_no {
-            self.update_key(if yes_no {
-                b'y' as i32
-            }else {
-                b'n' as i32
-            });
+            if let Some(dialog_selection) = dialog.on_mouse_pressed(Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT, column, row) {
+                self.game_state.close_dialog();
+
+                let screen = self.screens.get_mut(&self.game_state.current_screen_id);
+                if let Some(screen) = screen {
+                    screen.on_dialog_selection(&mut self.game_state, dialog_selection);
+                }
+            }
 
             return;
         }
