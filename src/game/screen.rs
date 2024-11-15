@@ -333,7 +333,7 @@ impl Screen for ScreenSelectLevelPack {
         }else {
             //Draw sum of best time and sum of best moves
             console.set_cursor_pos(1, y + 1);
-            console.draw_text(format!("Selected level pack:             {:02}", game_state.get_level_pack_index() + 1));
+            console.draw_text(format!("Selected level pack: {:>14}", game_state.level_packs().get(game_state.get_level_pack_index()).unwrap().id()));
             console.set_cursor_pos(1, y + 2);
             console.draw_text("Sum of best time   : ");
             match game_state.get_current_level_pack().as_ref().unwrap().level_pack_best_time_sum() {
@@ -1166,6 +1166,10 @@ impl Screen for ScreenInGame {
 
             if self.secret_found_flag {
                 game_state.open_dialog(Dialog::new("You have found a secret!"));
+
+                if let Err(err) = game_state.on_found_secret() {
+                    //TODO show error dialog
+                }
             }
         }
     }

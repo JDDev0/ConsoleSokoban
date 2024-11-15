@@ -86,6 +86,8 @@ struct GameState {
     is_player_background: bool,
     player_background_tmp: i32,
 
+    found_secret: bool,
+
     should_exit: bool,
 
     editor_state: EditorState,
@@ -107,6 +109,8 @@ impl GameState {
 
             is_player_background: Default::default(),
             player_background_tmp: Default::default(),
+
+            found_secret: Default::default(),
 
             should_exit: Default::default(),
 
@@ -178,6 +182,15 @@ impl GameState {
     pub fn exit(&mut self) {
         self.should_exit = true;
     }
+
+    pub fn on_found_secret(&mut self) -> Result<(), Box<dyn Error>> {
+        if !self.found_secret {
+            self.found_secret = true;
+            self.level_packs.insert(4, LevelPack::read_from_save_game("secret", "build-in:secret", Game::MAP_SECRET)?);
+        }
+
+        Ok(())
+    }
 }
 
 pub struct Game<'a> {
@@ -205,6 +218,8 @@ impl <'a> Game<'a> {
     const MAP_MAIN: &'static str = include_str!("../resources/main.lvl");
     const MAP_SPECIAL: &'static str = include_str!("../resources/special.lvl");
     const MAP_DEMON: &'static str = include_str!("../resources/demon.lvl");
+
+    const MAP_SECRET: &'static str = include_str!("../resources/secret.lvl");
 
     pub fn get_or_create_save_game_folder() -> Result<OsString, Box<dyn Error>> {
         let mut directory = if cfg!(windows) {
@@ -371,13 +386,21 @@ impl <'a> Game<'a> {
                 }
          */
 
+        let mut game_state = GameState::new(level_packs, editor_level_packs);
+
+        let mut save_game_file = Game::get_or_create_save_game_folder()?;
+        save_game_file.push("secret.lvl.sav");
+        if std::fs::exists(&save_game_file).is_ok_and(|exists| exists) {
+            game_state.on_found_secret()?;
+        }
+
         Ok(Self {
             console,
 
             screens,
             help_page: HelpPage::new(),
 
-            game_state: GameState::new(level_packs, editor_level_packs),
+            game_state,
         })
     }
 
