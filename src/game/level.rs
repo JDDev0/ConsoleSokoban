@@ -608,7 +608,11 @@ impl LevelPack {
     }
 
     pub fn save_editor_level_pack(&self) -> Result<(), Box<dyn Error>> {
-        let mut file = File::create(&self.path)?;
+        self.save_editor_level_pack_to_path(&self.path)
+    }
+
+    pub fn save_editor_level_pack_to_path(&self, path: impl Into<String>) -> Result<(), Box<dyn Error>> {
+        let mut file = File::create(path.into())?;
 
         file.write_fmt(format_args!("Levels: {}\n", self.levels.len()))?;
 
