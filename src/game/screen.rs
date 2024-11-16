@@ -1988,7 +1988,9 @@ impl ScreenLevelEditor {
                     return;
                 },
 
-                b'i' => {
+                key @ (b'c' | b'i') => {
+                    let is_copy = key == b'c';
+
                     if self.is_vertical_input {
                         if self.level.as_ref().unwrap().height() == Game::LEVEL_MAX_HEIGHT {
                             game_state.open_dialog(Box::new(DialogOk::new_error(format!(
@@ -1999,11 +2001,11 @@ impl ScreenLevelEditor {
                             return;
                         }
 
-                        let index = if self.is_reverse_input {
-                            self.cursor_pos.1
-                        }else {
-                            self.cursor_pos.1 + 1
-                        };
+                        let index_orig = self.cursor_pos.1;
+                        if !self.is_reverse_input {
+                            self.cursor_pos.1 += 1;
+                        }
+                        let index = self.cursor_pos.1;
 
                         let level_orig = self.level.clone().unwrap();
                         let mut new_level = Level::new(level_orig.width(), level_orig.height() + 1);
@@ -2019,7 +2021,12 @@ impl ScreenLevelEditor {
                                 new_level.set_tile(i, j, tile);
                             }
 
-                            new_level.set_tile(i, index, Tile::Empty);
+                            let tile = if is_copy {
+                                level_orig.get_tile(i, index_orig).unwrap().clone()
+                            }else {
+                                Tile::Empty
+                            };
+                            new_level.set_tile(i, index, tile);
                         }
 
                         self.level = Some(new_level);
@@ -2033,11 +2040,11 @@ impl ScreenLevelEditor {
                             return;
                         }
 
-                        let index = if self.is_reverse_input {
-                            self.cursor_pos.0
-                        }else {
-                            self.cursor_pos.0 + 1
-                        };
+                        let index_orig = self.cursor_pos.0;
+                        if !self.is_reverse_input {
+                            self.cursor_pos.0 += 1;
+                        }
+                        let index = self.cursor_pos.0;
 
                         let level_orig = self.level.clone().unwrap();
                         let mut new_level = Level::new(level_orig.width() + 1, level_orig.height());
@@ -2053,7 +2060,12 @@ impl ScreenLevelEditor {
                                 new_level.set_tile(j, i, tile);
                             }
 
-                            new_level.set_tile(index, i, Tile::Empty);
+                            let tile = if is_copy {
+                                level_orig.get_tile(index_orig, i).unwrap().clone()
+                            }else {
+                                Tile::Empty
+                            };
+                            new_level.set_tile(index, i, tile);
                         }
 
                         self.level = Some(new_level);
