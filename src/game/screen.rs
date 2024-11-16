@@ -240,7 +240,7 @@ impl Screen for ScreenSelectLevelPack {
 
         if game_state.get_level_pack_index() == game_state.get_level_pack_count() {
             //Level Pack Editor entry
-            console.set_cursor_pos(5, y + 2);
+            console.set_cursor_pos(6, y + 2);
             console.draw_text("Create or edit level packs");
         }else {
             //Draw sum of best time and sum of best moves
@@ -807,7 +807,7 @@ impl Screen for ScreenInGame {
 
         console.set_cursor_pos(((Game::CONSOLE_MIN_WIDTH - 9) as f64 * 0.25) as usize, 0);
         console.draw_text("Level: ");
-        console.draw_text(utils::number_to_string_leading_ascii(2, game_state.current_level_index as u32 + 1, false));
+        console.draw_text(utils::number_to_string_leading_ascii(2, game_state.current_level_index as u32 + 1, true));
 
         console.set_cursor_pos(((Game::CONSOLE_MIN_WIDTH - 11) as f64 * 0.75) as usize, 0);
         console.draw_text(format!("Moves: {:04}", self.moves));
