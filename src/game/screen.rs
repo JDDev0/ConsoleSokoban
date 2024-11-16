@@ -9,6 +9,7 @@ use crate::game::level::{Level, LevelPack, Tile};
 use crate::game::screen::dialog::{DialogOk, DialogSelection};
 
 pub mod dialog;
+pub mod utils;
 
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum ScreenId {
@@ -413,13 +414,7 @@ impl Screen for ScreenSelectLevel {
                 }
             );
             console.set_cursor_pos(x, y);
-
-            if i + 1 < 100 {
-                console.draw_text(format!("{:2}", i + 1));
-            }else {
-                console.draw_text(format!("{}", (b'A' + (i as u8 + 1 - 100) / 10) as char));
-                console.draw_text(format!("{}", (i + 1) % 10));
-            }
+            console.draw_text(utils::number_to_string_leading_ascii(2, i as u32 + 1, false));
 
             console.reset_color();
             console.draw_text("|");
@@ -460,12 +455,8 @@ impl Screen for ScreenSelectLevel {
         console.set_cursor_pos(1, y + 1);
         console.draw_text("Selected level:        ");
         let selected_level = self.selected_level;
-        if selected_level + 1 < 100 {
-            console.draw_text(format!("{:02}", selected_level + 1));
-        }else {
-            console.draw_text(format!("{}", (b'A' + (selected_level as u8 + 1 - 100) / 10) as char));
-            console.draw_text(format!("{}", (selected_level + 1) % 10));
-        }
+        console.draw_text(utils::number_to_string_leading_ascii(2, selected_level as u32 + 1, true));
+
         console.set_cursor_pos(1, y + 2);
         console.draw_text("Best time     : ");
         match game_state.get_current_level_pack().as_ref().unwrap().levels().get(selected_level).unwrap().best_time() {
@@ -816,13 +807,7 @@ impl Screen for ScreenInGame {
 
         console.set_cursor_pos(((Game::CONSOLE_MIN_WIDTH - 9) as f64 * 0.25) as usize, 0);
         console.draw_text("Level: ");
-        let level = game_state.current_level_index + 1;
-        if level < 100 {
-            console.draw_text(format!("{:02}", level));
-        }else {
-            console.draw_text(format!("{}", (b'A' + (level as u8 + 1 - 100) / 10) as char));
-            console.draw_text(format!("{}", (level + 1) % 10));
-        }
+        console.draw_text(utils::number_to_string_leading_ascii(2, game_state.current_level_index as u32 + 1, false));
 
         console.set_cursor_pos(((Game::CONSOLE_MIN_WIDTH - 11) as f64 * 0.75) as usize, 0);
         console.draw_text(format!("Moves: {:04}", self.moves));
@@ -1461,12 +1446,7 @@ impl Screen for ScreenLevelPackEditor {
                 console.draw_text(" +");
             }else {
                 console.set_color(Color::Black, Color::Green);
-                if i + 1 < 100 {
-                    console.draw_text(format!("{:2}", i + 1));
-                }else {
-                    console.draw_text(format!("{}", (b'A' + (i as u8 + 1 - 100) / 10) as char));
-                    console.draw_text(format!("{}", (i + 1) % 10));
-                }
+                console.draw_text(utils::number_to_string_leading_ascii(2, i as u32 + 1, false));
             }
 
             console.reset_color();
@@ -1544,12 +1524,7 @@ impl Screen for ScreenLevelPackEditor {
             console.set_cursor_pos(1, y + 1);
             console.draw_text("Selected level: ");
             let selected_level = game_state.editor_state.selected_level_index;
-            if selected_level + 1 < 100 {
-                console.draw_text(format!("{:02}", selected_level + 1));
-            }else {
-                console.draw_text(format!("{}", (b'A' + (selected_level as u8 + 1 - 100) / 10) as char));
-                console.draw_text(format!("{}", (selected_level + 1) % 10));
-            }
+            console.draw_text(utils::number_to_string_leading_ascii(2, selected_level as u32 + 1, true));
 
             console.set_cursor_pos(1, y + 2);
             console.draw_text(format!(
