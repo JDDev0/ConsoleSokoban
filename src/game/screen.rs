@@ -1080,6 +1080,7 @@ impl Screen for ScreenInGame {
 
 pub struct ScreenSelectLevelPackEditor {
     is_exporting_level_pack: bool,
+    is_deleting_level_pack: bool,
 
     is_creating_new_level_pack: bool,
     new_level_pack_id: String,
@@ -1089,6 +1090,7 @@ impl ScreenSelectLevelPackEditor {
     pub fn new() -> Self {
         Self {
             is_exporting_level_pack: Default::default(),
+            is_deleting_level_pack: Default::default(),
 
             is_creating_new_level_pack: Default::default(),
             new_level_pack_id: String::new(),
@@ -1310,6 +1312,15 @@ impl Screen for ScreenSelectLevelPackEditor {
             game_state.open_dialog(Box::new(DialogYesNo::new("Do you want to export the level pack to the current directory?")));
         }
 
+        if key == keys::DELETE && game_state.editor_state.selected_level_pack_index != game_state.editor_state.get_level_pack_count() {
+            self.is_deleting_level_pack = true;
+
+            game_state.open_dialog(Box::new(DialogYesNo::new(format!(
+                "Do you really want to delete level pack \"{}\"?",
+                game_state.editor_state.get_current_level_pack().unwrap().id(),
+            ))));
+        }
+
         'outer: {
             //Include Level Pack Editor entry
             let entry_count = game_state.editor_state.get_level_pack_count() + 1;
@@ -1402,6 +1413,19 @@ impl Screen for ScreenSelectLevelPackEditor {
                     game_state.open_dialog(Box::new(DialogOk::new_error(format!("Cannot export: {}", err))));
                 }else {
                     game_state.open_dialog(Box::new(DialogOk::new("The level pack was exported successfully")));
+                }
+            }
+        }else if self.is_deleting_level_pack {
+            self.is_deleting_level_pack = false;
+
+            if selection == DialogSelection::Yes {
+                let path = game_state.editor_state.get_current_level_pack().unwrap().path();
+
+                if let Err(err) = std::fs::remove_file(path) {
+                    game_state.open_dialog(Box::new(DialogOk::new_error(format!("Cannot delete: {}", err))));
+                }else {
+                    let index = game_state.editor_state.selected_level_pack_index;
+                    game_state.editor_state.level_packs.remove(index);
                 }
             }
         }
@@ -1759,8 +1783,6 @@ impl Screen for ScreenLevelPackEditor {
                 if let Err(err) = game_state.editor_state.get_current_level_pack().unwrap().save_editor_level_pack() {
                     game_state.open_dialog(Box::new(DialogOk::new_error(format!("Cannot save: {}", err))));
                 }
-
-                self.is_deleting_level = false;
             }
         }
     }
@@ -2208,13 +2230,10 @@ impl Screen for ScreenLevelEditor {
             if let Err(err) = game_state.editor_state.get_current_level_pack().unwrap().save_editor_level_pack() {
                 game_state.open_dialog(Box::new(DialogOk::new_error(format!("Cannot save: {}", err))));
             }
-
-            game_state.set_screen(ScreenId::LevelPackEditor);
-        }else if selection == DialogSelection::No {
-            self.level = None;
-
-            game_state.set_screen(ScreenId::LevelPackEditor);
         }
+
+        self.level = None;
+        game_state.set_screen(ScreenId::LevelPackEditor);
     }
 
     fn on_set_screen(&mut self, game_state: &mut GameState) {
