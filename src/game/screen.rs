@@ -2151,7 +2151,7 @@ impl Screen for ScreenLevelEditor {
     fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
         if key == keys::ESC {
             //TODO use dialog with cancel option
-            game_state.open_dialog(Box::new(DialogYesNo::new("Exiting (Save changed?)")));
+            game_state.open_dialog(Box::new(DialogYesNo::new("Exiting (Save changes?)")));
 
             return;
         }
