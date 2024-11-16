@@ -87,7 +87,7 @@ struct GameState {
     is_player_background: bool,
     player_background_tmp: i32,
 
-    found_secret: bool,
+    found_secret_main_level_pack: bool,
 
     should_exit: bool,
 
@@ -111,7 +111,7 @@ impl GameState {
             is_player_background: Default::default(),
             player_background_tmp: Default::default(),
 
-            found_secret: Default::default(),
+            found_secret_main_level_pack: Default::default(),
 
             should_exit: Default::default(),
 
@@ -184,13 +184,23 @@ impl GameState {
         self.should_exit = true;
     }
 
-    pub fn on_found_secret(&mut self) -> Result<(), Box<dyn Error>> {
-        if !self.found_secret {
-            self.found_secret = true;
-            self.level_packs.insert(4, LevelPack::read_from_save_game("secret", "build-in:secret", Game::MAP_SECRET)?);
+    fn on_found_secret_for_level_pack(&mut self, level_pack_index: usize) -> Result<(), Box<dyn Error>> {
+        if level_pack_index == 1 && !self.found_secret_main_level_pack {
+            self.found_secret_main_level_pack = true;
+
+            let secret_level_pack = LevelPack::read_from_save_game("secret", "build-in:secret", Game::MAP_SECRET)?;
+
+            //Save immediately in order to keep secret level pack after game restart if not yet played
+            secret_level_pack.save_save_game()?;
+
+            self.level_packs.insert(4, secret_level_pack);
         }
 
         Ok(())
+    }
+
+    pub fn on_found_secret(&mut self) -> Result<(), Box<dyn Error>> {
+        self.on_found_secret_for_level_pack(self.current_level_pack_index)
     }
 }
 
@@ -462,7 +472,7 @@ impl <'a> Game<'a> {
         let mut save_game_file = Game::get_or_create_save_game_folder()?;
         save_game_file.push("secret.lvl.sav");
         if std::fs::exists(&save_game_file).is_ok_and(|exists| exists) {
-            game_state.on_found_secret()?;
+            game_state.on_found_secret_for_level_pack(1)?;
         }
 
         Ok(Self {
