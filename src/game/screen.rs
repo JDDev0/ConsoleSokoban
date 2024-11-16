@@ -1865,7 +1865,7 @@ impl ScreenLevelEditor {
         }
     }
 
-    fn on_key_pressed_editing(&mut self, key: i32) {
+    fn on_key_pressed_editing(&mut self, game_state: &mut GameState, key: i32) {
         match key {
             keys::LEFT => {
                 if self.cursor_pos.0 > 0 {
@@ -1911,23 +1911,97 @@ impl ScreenLevelEditor {
                     return;
                 },
 
+                b'i' => {
+                    if self.is_vertical_input {
+                        if self.level.as_ref().unwrap().height() == Game::LEVEL_MAX_HEIGHT {
+                            game_state.open_dialog(Box::new(DialogOk::new_error(format!(
+                                "Level height limit reached (max: {})",
+                                Game::LEVEL_MAX_HEIGHT,
+                            ))));
+
+                            return;
+                        }
+
+                        let index = if self.is_reverse_input {
+                            self.cursor_pos.1
+                        }else {
+                            self.cursor_pos.1 + 1
+                        };
+
+                        let level_orig = self.level.clone().unwrap();
+                        let mut new_level = Level::new(level_orig.width(), level_orig.height() + 1);
+
+                        for i in 0..level_orig.width() {
+                            for mut j in 0..level_orig.height() {
+                                let tile = level_orig.get_tile(i, j).unwrap().clone();
+
+                                if j >= index {
+                                    j += 1;
+                                }
+
+                                new_level.set_tile(i, j, tile);
+                            }
+
+                            new_level.set_tile(i, index, Tile::Empty);
+                        }
+
+                        self.level = Some(new_level);
+                    }else {
+                        if self.level.as_ref().unwrap().width() == Game::LEVEL_MAX_WIDTH {
+                            game_state.open_dialog(Box::new(DialogOk::new_error(format!(
+                                "Level width limit reached (max: {})",
+                                Game::LEVEL_MAX_WIDTH,
+                            ))));
+
+                            return;
+                        }
+
+                        let index = if self.is_reverse_input {
+                            self.cursor_pos.0
+                        }else {
+                            self.cursor_pos.0 + 1
+                        };
+
+                        let level_orig = self.level.clone().unwrap();
+                        let mut new_level = Level::new(level_orig.width() + 1, level_orig.height());
+
+                        for i in 0..level_orig.height() {
+                            for mut j in 0..level_orig.width() {
+                                let tile = level_orig.get_tile(j, i).unwrap().clone();
+
+                                if j >= index {
+                                    j += 1;
+                                }
+
+                                new_level.set_tile(j, i, tile);
+                            }
+
+                            new_level.set_tile(index, i, Tile::Empty);
+                        }
+
+                        self.level = Some(new_level);
+                    }
+                    
+                    return;
+                },
+
                 key => {
                     if let Ok(tile_input) = Tile::from_ascii(key) {
                         if tile_input != Tile::Secret {
                             *tile = tile_input;
                         }
                     }
-                }
+                },
             }
 
             if self.is_vertical_input {
-                self.on_key_pressed_editing(if self.is_reverse_input {
+                self.on_key_pressed_editing(game_state, if self.is_reverse_input {
                     keys::UP
                 }else {
                     keys::DOWN
                 });
             }else {
-                self.on_key_pressed_editing(if self.is_reverse_input {
+                self.on_key_pressed_editing(game_state, if self.is_reverse_input {
                     keys::LEFT
                 }else {
                     keys::RIGHT
@@ -2012,7 +2086,7 @@ impl Screen for ScreenLevelEditor {
         }
 
         if self.playing_level.is_none() {
-            self.on_key_pressed_editing(key);
+            self.on_key_pressed_editing(game_state, key);
         }else {
             self.on_key_pressed_playing(key);
         }

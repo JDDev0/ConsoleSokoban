@@ -182,7 +182,7 @@ impl Level {
     pub fn tiles(&self) -> &[Tile] {
         &self.tiles
     }
-    
+
     pub fn get_tile(&self, x: usize, y: usize) -> Option<&Tile> {
         self.tiles.get(x + y * self.width)
     }
