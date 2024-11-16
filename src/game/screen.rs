@@ -989,17 +989,14 @@ impl Screen for ScreenInGame {
 
             let mut has_won = false;
             let tile = self.level_now.as_ref().unwrap().get_tile(x_to, y_to).unwrap().clone();
-            if matches!(tile, Tile::Empty | Tile::Goal | Tile::Secret) || tile == one_way_door_tile {
+            if matches!(tile, Tile::Empty | Tile::Goal | Tile::Secret) || tile == one_way_door_tile ||
+                    matches!(tile, Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if self.level_now.as_mut().unwrap().move_box_or_key(
+                        level_pack.levels().get(current_level_index).unwrap().level(), &mut has_won, x_from, y_from, x_to, y_to)) {
                 if tile == Tile::Secret {
                     self.game_over_flag = true;
                     self.secret_found_flag = true;
                 }
 
-                self.player_pos = (x_to, y_to);
-            }else if matches!(tile, Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if self.level_now.as_mut().unwrap().move_box_or_key(
-                level_pack.levels().get(current_level_index).unwrap().level(),
-                &mut has_won, x_from, y_from, x_to, y_to
-            )) {
                 self.player_pos = (x_to, y_to);
             }
 
@@ -1845,12 +1842,9 @@ impl ScreenLevelEditor {
 
                 let mut has_won = false;
                 let tile = level.get_tile(x_to, y_to).unwrap().clone();
-                if matches!(tile, Tile::Empty | Tile::Goal | Tile::Secret) || tile == one_way_door_tile {
-                    self.player_pos = (x_to, y_to);
-                }else if matches!(tile, Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if level.move_box_or_key(
-                    self.level.as_ref().unwrap(),
-                    &mut has_won, x_from, y_from, x_to, y_to
-                )) {
+                if matches!(tile, Tile::Empty | Tile::Goal | Tile::Secret) || tile == one_way_door_tile ||
+                        matches!(tile, Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if level.move_box_or_key(
+                            self.level.as_ref().unwrap(), &mut has_won, x_from, y_from, x_to, y_to)) {
                     self.player_pos = (x_to, y_to);
                 }
 
