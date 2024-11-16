@@ -1192,6 +1192,7 @@ impl Screen for ScreenSelectLevelPackEditor {
             console.draw_text("Enter a new level pack ID:");
 
             console.set_cursor_pos(1, y + 2);
+            console.set_color(Color::Cyan, Color::Default);
             console.draw_text(format!("> {}", &self.new_level_pack_id));
         }else if game_state.editor_state.get_level_pack_index() == game_state.editor_state.get_level_pack_count() {
             //Level Pack Editor entry
@@ -1637,6 +1638,12 @@ impl Screen for ScreenLevelPackEditor {
 
                     if !(3..=Game::LEVEL_MAX_WIDTH).contains(&width) {
                         game_state.open_dialog(Box::new(DialogOk::new_error(format!("Width must be >= 3 and <= {}!", Game::LEVEL_MAX_WIDTH))));
+
+                        return;
+                    }
+
+                    if self.new_level_height_str.is_empty() && !self.is_editing_height {
+                        self.is_editing_height = true;
 
                         return;
                     }
