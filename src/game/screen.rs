@@ -1924,42 +1924,6 @@ impl ScreenLevelEditor {
 
         if key == keys::DELETE {
             if self.is_vertical_input {
-                if self.level.as_ref().unwrap().height() == 3 {
-                    game_state.open_dialog(Box::new(DialogOk::new_error(format!(
-                        "Level height limit reached (min: {})",
-                        3,
-                    ))));
-
-                    return;
-                }
-
-                let index = self.cursor_pos.1;
-
-                let level_orig = self.level.clone().unwrap();
-                let mut new_level = Level::new(level_orig.width(), level_orig.height() - 1);
-
-                if index == new_level.height() {
-                    self.cursor_pos.1 -= 1;
-                }
-
-                for i in 0..level_orig.width() {
-                    for mut j in 0..level_orig.height() {
-                        let tile = level_orig.get_tile(i, j).unwrap().clone();
-
-                        if j == index {
-                            continue;
-                        }
-
-                        if j >= index {
-                            j -= 1;
-                        }
-
-                        new_level.set_tile(i, j, tile);
-                    }
-                }
-
-                self.level = Some(new_level);
-            }else {
                 if self.level.as_ref().unwrap().width() == 3 {
                     game_state.open_dialog(Box::new(DialogOk::new_error(format!(
                         "Level width limit reached (min: {})",
@@ -1991,6 +1955,42 @@ impl ScreenLevelEditor {
                         }
 
                         new_level.set_tile(j, i, tile);
+                    }
+                }
+
+                self.level = Some(new_level);
+            }else {
+                if self.level.as_ref().unwrap().height() == 3 {
+                    game_state.open_dialog(Box::new(DialogOk::new_error(format!(
+                        "Level height limit reached (min: {})",
+                        3,
+                    ))));
+
+                    return;
+                }
+
+                let index = self.cursor_pos.1;
+
+                let level_orig = self.level.clone().unwrap();
+                let mut new_level = Level::new(level_orig.width(), level_orig.height() - 1);
+
+                if index == new_level.height() {
+                    self.cursor_pos.1 -= 1;
+                }
+
+                for i in 0..level_orig.width() {
+                    for mut j in 0..level_orig.height() {
+                        let tile = level_orig.get_tile(i, j).unwrap().clone();
+
+                        if j == index {
+                            continue;
+                        }
+
+                        if j >= index {
+                            j -= 1;
+                        }
+
+                        new_level.set_tile(i, j, tile);
                     }
                 }
 
