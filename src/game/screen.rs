@@ -2203,6 +2203,12 @@ impl Screen for ScreenLevelEditor {
             return;
         }
 
+        if key == keys::F1 {
+            game_state.open_help_page();
+
+            return;
+        }
+
         if key == b'r' as i32 {
             self.playing_level = if self.playing_level.is_some() {
                 None
