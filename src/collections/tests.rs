@@ -1,4 +1,4 @@
-use crate::utils::*;
+use crate::collections::*;
 
 #[test]
 #[should_panic(expected = "Capacity must be > 0")]

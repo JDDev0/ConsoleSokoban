@@ -5,7 +5,7 @@ use std::time::Duration;
 use crate::game::Game;
 
 mod game;
-pub mod utils;
+pub mod collections;
 
 fn main() -> ExitCode {
     let console = Console::new().unwrap();

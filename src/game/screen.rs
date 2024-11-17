@@ -7,7 +7,7 @@ use dialog::DialogYesNo;
 use crate::game::{Game, GameState};
 use crate::game::level::{Level, LevelPack, Tile};
 use crate::game::screen::dialog::{DialogOk, DialogSelection};
-use crate::utils::UndoHistory;
+use crate::collections::UndoHistory;
 
 pub mod dialog;
 pub mod utils;
