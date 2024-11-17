@@ -131,27 +131,30 @@ pub struct HelpPage {
 }
 
 impl HelpPage {
-    const PAGE_COUNT: u32 = 6;
+    const PAGE_COUNT: u32 = 9;
 
     pub fn new() -> Self {
         let mut table_of_contents = TableOfContents::new();
-        table_of_contents.add_section("Controls", 1);
-        table_of_contents.add_sub_section("Keyboard", 1);
-        table_of_contents.add_sub_sub_section("Help menu", 1);
-        table_of_contents.add_sub_sub_section("Exit window", 1);
-        table_of_contents.add_sub_sub_section("Start menu", 1);
-        table_of_contents.add_sub_sub_section("Game controls", 1);
-        table_of_contents.add_sub_section("Mouse input", 2);
+        table_of_contents.add_section("Controls", 2);
+        table_of_contents.add_sub_section("Keyboard", 2);
         table_of_contents.add_sub_sub_section("Help menu", 2);
         table_of_contents.add_sub_sub_section("Exit window", 2);
-        table_of_contents.add_sub_sub_section("Start menu", 3);
-        table_of_contents.add_section("Console arguments", 3);
-        table_of_contents.add_section("Gameplay", 4);
-        table_of_contents.add_sub_section("Game screen", 4);
-        table_of_contents.add_section("Editor", 5);
-        table_of_contents.add_sub_section("Controls", 5);
-        table_of_contents.add_sub_sub_section("Level Pack selection", 5);
-        table_of_contents.add_sub_sub_section("Level selection", 5);
+        table_of_contents.add_sub_sub_section("Start menu", 2);
+        table_of_contents.add_sub_sub_section("Game controls", 2);
+        table_of_contents.add_sub_section("Mouse input", 3);
+        table_of_contents.add_sub_sub_section("Help menu", 3);
+        table_of_contents.add_sub_sub_section("Exit window", 3);
+        table_of_contents.add_sub_sub_section("Start menu", 4);
+        table_of_contents.add_section("Console arguments", 4);
+        table_of_contents.add_section("Gameplay", 5);
+        table_of_contents.add_sub_section("Game screen", 5);
+        table_of_contents.add_section("Editor", 6);
+        table_of_contents.add_sub_section("Controls", 6);
+        table_of_contents.add_sub_sub_section("Level Pack selection", 6);
+        table_of_contents.add_sub_sub_section("Level selection", 6);
+        table_of_contents.add_sub_sub_section("Level editor (Editing mode)", 7);
+        table_of_contents.add_sub_sub_section("Level editor (Editing mode - Tiles)", 7);
+        table_of_contents.add_sub_sub_section("Level editor (Playing mode)", 8);
 
         Self {
             table_of_contents,
@@ -166,11 +169,11 @@ impl HelpPage {
 
         console.set_cursor_pos(0, 2);
         match self.page {
-            page @ 0 => {
+            page @ 0..=1 => {
                 console.set_underline(false);
                 self.table_of_contents.draw(console, 0, 2, width, height - 4, page);
             },
-            1 => {
+            2 => {
                 console.set_color(Color::Blue, Color::Default);
                 console.draw_text("1 Controls\n");
 
@@ -258,7 +261,7 @@ impl HelpPage {
                 console.reset_color();
                 console.draw_text(": One step back/forward");
             },
-            2 => {
+            3 => {
                 console.set_color(Color::Green, Color::Default);
                 console.draw_text("1.2 Mouse input\n");
 
@@ -351,7 +354,7 @@ impl HelpPage {
                 console.reset_color();
                 console.draw_text(")");
             },
-            3 => {
+            4 => {
                 console.set_color(Color::Blue, Color::Default);
                 console.draw_text("2 Console arguments\n");
 
@@ -359,7 +362,7 @@ impl HelpPage {
                 console.reset_color();
                 console.draw_text("1) No arguments\n2) \"Path to level pack 1\" \"Path to level pack 2\" ...");
             },
-            4 => {
+            5 => {
                 console.set_color(Color::Blue, Color::Default);
                 console.draw_text("3 Gameplay\n");
 
@@ -411,7 +414,7 @@ impl HelpPage {
                 console.set_cursor_pos(0, 13);
                 console.draw_text("=");
             },
-            5 => {
+            6 => {
                 console.set_color(Color::Blue, Color::Default);
                 console.draw_text("4 Editor\n");
                 console.set_color(Color::Green, Color::Default);
@@ -425,19 +428,19 @@ impl HelpPage {
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("ENTER");
                 console.reset_color();
-                console.draw_text(": Select or create a level pack");
+                console.draw_text(": Selects or creates a level pack");
 
                 console.set_cursor_pos(0, 6);
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("e");
                 console.reset_color();
-                console.draw_text(": Export the selected level pack to the current directory");
+                console.draw_text(": Exports the selected level pack to the current directory");
 
                 console.set_cursor_pos(0, 7);
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("DELETE");
                 console.reset_color();
-                console.draw_text(": Delete the selected level pack");
+                console.draw_text(": Deletes the selected level pack");
 
                 console.set_cursor_pos(0, 8);
                 console.set_color(Color::LightRed, Color::Default);
@@ -457,19 +460,147 @@ impl HelpPage {
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("ENTER");
                 console.reset_color();
-                console.draw_text(": Select or create a level");
+                console.draw_text(": Selects or create a level");
 
                 console.set_cursor_pos(0, 12);
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("DELETE");
                 console.reset_color();
-                console.draw_text(": Delete the selected level");
+                console.draw_text(": Deletes the selected level");
 
                 console.set_cursor_pos(0, 13);
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("ESC");
                 console.reset_color();
                 console.draw_text(": Cancels the creation of a new level");
+            },
+            7 => {
+                console.set_color(Color::Cyan, Color::Default);
+                console.draw_text("4.1.3 Level editor (Editing mode)\n");
+
+                console.set_underline(false);
+
+                console.set_cursor_pos(0, 3);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("Arrow keys");
+                console.reset_color();
+                console.draw_text(": Moves cursor position\n");
+
+                console.set_cursor_pos(0, 4);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("w a s d");
+                console.reset_color();
+                console.draw_text(": Sets the direction of the cursor");
+
+                console.set_cursor_pos(0, 5);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("i");
+                console.reset_color();
+                console.draw_text(": Inserts a row or column in the cursor direction");
+
+                console.set_cursor_pos(0, 6);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("c");
+                console.reset_color();
+                console.draw_text(": Copies the current row or column in the cursor direction");
+
+                console.set_cursor_pos(0, 7);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("r");
+                console.reset_color();
+                console.draw_text(": Goes into the playing mode");
+
+                console.set_underline(true);
+
+                console.set_cursor_pos(0, 9);
+                console.set_color(Color::Cyan, Color::Default);
+                console.draw_text("4.1.4 Level editor (Editing mode - Tiles)\n");
+
+                console.set_underline(false);
+
+                console.set_cursor_pos(0, 10);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("SPACE");
+                console.reset_color();
+                console.draw_text(": Moves the cursor in cursor direction");
+
+                console.set_cursor_pos(0, 11);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("-");
+                console.reset_color();
+                console.draw_text(": Inserts an empty tile");
+
+                console.set_cursor_pos(0, 12);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("< ^ > v");
+                console.reset_color();
+                console.draw_text(": Inserts an one-way door tile");
+
+                console.set_cursor_pos(0, 13);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("#");
+                console.reset_color();
+                console.draw_text(": Inserts a wall tile");
+
+                console.set_cursor_pos(0, 14);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("p");
+                console.reset_color();
+                console.draw_text(": Inserts a player tile");
+
+                console.set_cursor_pos(0, 15);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("*");
+                console.reset_color();
+                console.draw_text(": Inserts a key tile");
+
+                console.set_cursor_pos(0, 16);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("~");
+                console.reset_color();
+                console.draw_text(": Inserts a key in goal tile");
+
+                console.set_cursor_pos(0, 17);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("=");
+                console.reset_color();
+                console.draw_text(": Inserts a closed door tile");
+
+                console.set_cursor_pos(0, 18);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("@");
+                console.reset_color();
+                console.draw_text(": Inserts a box tile");
+
+                console.set_cursor_pos(0, 19);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("+");
+                console.reset_color();
+                console.draw_text(": Inserts a box in goal tile");
+
+                console.set_cursor_pos(0, 20);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("x");
+                console.reset_color();
+                console.draw_text(": Inserts a goal tile");
+            },
+            8 => {
+                console.set_color(Color::Cyan, Color::Default);
+                console.draw_text("4.1.5 Level editor (Playing mode)\n");
+
+                console.set_underline(false);
+
+                console.set_cursor_pos(0, 3);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("Arrow keys");
+                console.reset_color();
+                console.draw_text(": Moves the player\n");
+
+                console.set_cursor_pos(0, 4);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("r");
+                console.reset_color();
+                console.draw_text(": Goes into the editing mode");
             },
             _ => {},
         }
@@ -502,7 +633,7 @@ impl HelpPage {
     }
 
     pub fn on_mouse_pressed(&mut self, _width: usize, height: usize, column: usize, row: usize) {
-        if row > 2 && row < height - 2 {
+        if row >= 2 && row < height - 2 {
             if let Some(page_clicked) = self.table_of_contents.get_page_mouse_clicked(height, self.page, row as u32 - 2) {
                 self.page = page_clicked;
             }
