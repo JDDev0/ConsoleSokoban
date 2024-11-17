@@ -1812,7 +1812,7 @@ impl ScreenLevelEditor {
     pub fn new() -> Self {
         Self {
             level: Default::default(),
-            level_undo_history: UndoHistory::new(Self::UNDO_HISTORY_SIZE),
+            level_undo_history: UndoHistory::new(Self::UNDO_HISTORY_SIZE, Level::new(1, 1)),
             is_vertical_input: Default::default(),
             is_reverse_input: Default::default(),
             playing_level: Default::default(),
@@ -2289,8 +2289,7 @@ impl Screen for ScreenLevelEditor {
         self.player_pos = (0, 0);
 
         let level = game_state.editor_state.get_current_level().unwrap().clone();
-        self.level_undo_history.clear();
-        self.level_undo_history.commit_change(level.clone());
+        self.level_undo_history.clear_with_new_initial(level.clone());
 
         self.level = Some(level);
     }
