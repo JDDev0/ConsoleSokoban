@@ -5,7 +5,7 @@ A sokoban game for Console (Linux, Windows)
 Download on itch.io: [Console Sokoban](https://jddev0.itch.io/console-sokoban)
 
 ## Gameplay
-![image](https://github.com/user-attachments/assets/e8215abb-7437-47c4-a971-4d613405cef6)
+![image](https://github.com/user-attachments/assets/4772dc3d-3258-4bf9-8ca5-86df9296a852)
 
 ## Compile & Run
 
