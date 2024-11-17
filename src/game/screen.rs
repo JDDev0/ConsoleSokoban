@@ -2131,9 +2131,12 @@ impl ScreenLevelEditor {
                     if let Ok(tile_input) = Tile::from_ascii(key) {
                         if tile_input != Tile::Secret {
                             let tile = self.level.as_mut().unwrap().get_tile_mut(self.cursor_pos.0, self.cursor_pos.1).unwrap();
-                            *tile = tile_input;
 
-                            self.on_level_changed();
+                            if *tile != tile_input {
+                                *tile = tile_input;
+
+                                self.on_level_changed();
+                            }
                         }
                     }
                 },
