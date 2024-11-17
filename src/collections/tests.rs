@@ -12,14 +12,14 @@ fn commit_change() {
     assert_eq!(undo_history.current(), &1);
     assert_eq!(undo_history.history.len(), 1);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
     assert_eq!(undo_history.history[0], 1);
 
     undo_history.commit_change(2);
     assert_eq!(undo_history.current(), &2);
     assert_eq!(undo_history.history.len(), 2);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 2);
+    assert_eq!(undo_history.current_index, 1);
     assert_eq!(undo_history.history[0], 1);
     assert_eq!(undo_history.history[1], 2);
 
@@ -27,7 +27,7 @@ fn commit_change() {
     assert_eq!(undo_history.current(), &3);
     assert_eq!(undo_history.history.len(), 3);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 3);
+    assert_eq!(undo_history.current_index, 2);
     assert_eq!(undo_history.history[0], 1);
     assert_eq!(undo_history.history[1], 2);
     assert_eq!(undo_history.history[2], 3);
@@ -36,7 +36,7 @@ fn commit_change() {
     assert_eq!(undo_history.current(), &4);
     assert_eq!(undo_history.history.len(), 4);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 4);
+    assert_eq!(undo_history.current_index, 3);
     assert_eq!(undo_history.history[0], 1);
     assert_eq!(undo_history.history[1], 2);
     assert_eq!(undo_history.history[2], 3);
@@ -46,7 +46,7 @@ fn commit_change() {
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 5);
+    assert_eq!(undo_history.current_index, 4);
     assert_eq!(undo_history.history[0], 1);
     assert_eq!(undo_history.history[1], 2);
     assert_eq!(undo_history.history[2], 3);
@@ -57,7 +57,7 @@ fn commit_change() {
     assert_eq!(undo_history.current(), &6);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 5);
+    assert_eq!(undo_history.current_index, 4);
     assert_eq!(undo_history.history[0], 2);
     assert_eq!(undo_history.history[1], 3);
     assert_eq!(undo_history.history[2], 4);
@@ -68,7 +68,7 @@ fn commit_change() {
     assert_eq!(undo_history.current(), &7);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 5);
+    assert_eq!(undo_history.current_index, 4);
     assert_eq!(undo_history.history[0], 3);
     assert_eq!(undo_history.history[1], 4);
     assert_eq!(undo_history.history[2], 5);
@@ -84,19 +84,19 @@ fn undo_changes_within_capacity() {
     assert_eq!(undo_history.current(), &1);
     assert_eq!(undo_history.history.len(), 1);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     assert_eq!(undo_history.undo(), None);
     assert_eq!(undo_history.current(), &1);
     assert_eq!(undo_history.history.len(), 1);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     assert_eq!(undo_history.undo(), None);
     assert_eq!(undo_history.current(), &1);
     assert_eq!(undo_history.history.len(), 1);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     undo_history.commit_change(2);
     undo_history.commit_change(3);
@@ -105,13 +105,13 @@ fn undo_changes_within_capacity() {
     assert_eq!(undo_history.current(), &2);
     assert_eq!(undo_history.history.len(), 3);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 2);
+    assert_eq!(undo_history.current_index, 1);
 
     assert_eq!(undo_history.undo(), Some(&1));
     assert_eq!(undo_history.current(), &1);
     assert_eq!(undo_history.history.len(), 3);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     undo_history.commit_change(4);
     undo_history.commit_change(5);
@@ -123,37 +123,37 @@ fn undo_changes_within_capacity() {
     assert_eq!(undo_history.current(), &7);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 4);
+    assert_eq!(undo_history.current_index, 3);
 
     assert_eq!(undo_history.undo(), Some(&6));
     assert_eq!(undo_history.current(), &6);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 3);
+    assert_eq!(undo_history.current_index, 2);
 
     assert_eq!(undo_history.undo(), Some(&5));
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 2);
+    assert_eq!(undo_history.current_index, 1);
 
     assert_eq!(undo_history.undo(), Some(&4));
     assert_eq!(undo_history.current(), &4);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     assert_eq!(undo_history.undo(), None);
     assert_eq!(undo_history.current(), &4);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     assert_eq!(undo_history.undo(), None);
     assert_eq!(undo_history.current(), &4);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 }
 
 #[test]
@@ -169,43 +169,43 @@ fn undo_changes_above_capacity() {
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 4);
+    assert_eq!(undo_history.current_index, 3);
 
     assert_eq!(undo_history.undo(), Some(&4));
     assert_eq!(undo_history.current(), &4);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 3);
+    assert_eq!(undo_history.current_index, 2);
 
     assert_eq!(undo_history.undo(), Some(&3));
     assert_eq!(undo_history.current(), &3);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 2);
+    assert_eq!(undo_history.current_index, 1);
 
     assert_eq!(undo_history.undo(), Some(&2));
     assert_eq!(undo_history.current(), &2);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     assert_eq!(undo_history.undo(), None);
     assert_eq!(undo_history.current(), &2);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     assert_eq!(undo_history.undo(), None);
     assert_eq!(undo_history.current(), &2);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     assert_eq!(undo_history.undo(), None);
     assert_eq!(undo_history.current(), &2);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 }
 
 #[test]
@@ -220,7 +220,7 @@ fn redo_changes_without_override() {
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 5);
+    assert_eq!(undo_history.current_index, 4);
 
     undo_history.undo();
 
@@ -228,13 +228,13 @@ fn redo_changes_without_override() {
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 5);
+    assert_eq!(undo_history.current_index, 4);
 
     assert_eq!(undo_history.redo(), None);
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 5);
+    assert_eq!(undo_history.current_index, 4);
 
     undo_history.undo();
     undo_history.undo();
@@ -246,37 +246,37 @@ fn redo_changes_without_override() {
     assert_eq!(undo_history.current(), &2);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 2);
+    assert_eq!(undo_history.current_index, 1);
 
     assert_eq!(undo_history.redo(), Some(&3));
     assert_eq!(undo_history.current(), &3);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 3);
+    assert_eq!(undo_history.current_index, 2);
 
     assert_eq!(undo_history.redo(), Some(&4));
     assert_eq!(undo_history.current(), &4);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 4);
+    assert_eq!(undo_history.current_index, 3);
 
     assert_eq!(undo_history.redo(), Some(&5));
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 5);
+    assert_eq!(undo_history.current_index, 4);
 
     assert_eq!(undo_history.redo(), None);
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 5);
+    assert_eq!(undo_history.current_index, 4);
 
     assert_eq!(undo_history.redo(), None);
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 5);
+    assert_eq!(undo_history.current_index, 4);
 
     undo_history.undo();
     undo_history.undo();
@@ -292,37 +292,37 @@ fn redo_changes_without_override() {
     assert_eq!(undo_history.current(), &2);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 2);
+    assert_eq!(undo_history.current_index, 1);
 
     assert_eq!(undo_history.redo(), Some(&3));
     assert_eq!(undo_history.current(), &3);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 3);
+    assert_eq!(undo_history.current_index, 2);
 
     assert_eq!(undo_history.redo(), Some(&4));
     assert_eq!(undo_history.current(), &4);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 4);
+    assert_eq!(undo_history.current_index, 3);
 
     assert_eq!(undo_history.redo(), Some(&5));
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 5);
+    assert_eq!(undo_history.current_index, 4);
 
     assert_eq!(undo_history.redo(), None);
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 5);
+    assert_eq!(undo_history.current_index, 4);
 
     assert_eq!(undo_history.redo(), None);
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 5);
+    assert_eq!(undo_history.current_index, 4);
 }
 
 #[test]
@@ -342,19 +342,19 @@ fn redo_changes_with_override() {
     assert_eq!(undo_history.current(), &2);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 2);
+    assert_eq!(undo_history.current_index, 1);
 
     undo_history.commit_change(42);
     assert_eq!(undo_history.current(), &42);
     assert_eq!(undo_history.history.len(), 3);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 3);
+    assert_eq!(undo_history.current_index, 2);
 
     assert_eq!(undo_history.redo(), None);
     assert_eq!(undo_history.current(), &42);
     assert_eq!(undo_history.history.len(), 3);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 3);
+    assert_eq!(undo_history.current_index, 2);
 
     undo_history.undo();
 
@@ -362,12 +362,12 @@ fn redo_changes_with_override() {
     assert_eq!(undo_history.current(), &84);
     assert_eq!(undo_history.history.len(), 3);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 3);
+    assert_eq!(undo_history.current_index, 2);
 
     assert_eq!(undo_history.redo(), None);
     assert_eq!(undo_history.history.len(), 3);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 3);
+    assert_eq!(undo_history.current_index, 2);
 
     undo_history.undo();
     undo_history.undo();
@@ -377,25 +377,25 @@ fn redo_changes_with_override() {
     assert_eq!(undo_history.current(), &21);
     assert_eq!(undo_history.history.len(), 2);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 2);
+    assert_eq!(undo_history.current_index, 1);
 
     assert_eq!(undo_history.undo(), Some(&1));
     assert_eq!(undo_history.current(), &1);
     assert_eq!(undo_history.history.len(), 2);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     assert_eq!(undo_history.redo(), Some(&21));
     assert_eq!(undo_history.current(), &21);
     assert_eq!(undo_history.history.len(), 2);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 2);
+    assert_eq!(undo_history.current_index, 1);
 
     assert_eq!(undo_history.redo(), None);
     assert_eq!(undo_history.current(), &21);
     assert_eq!(undo_history.history.len(), 2);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 2);
+    assert_eq!(undo_history.current_index, 1);
 }
 
 #[test]
@@ -412,19 +412,19 @@ fn clear() {
     assert_eq!(undo_history.current(), &3);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 3);
+    assert_eq!(undo_history.current_index, 2);
 
     undo_history.clear();
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 1);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     assert_eq!(undo_history.undo(), None);
     assert_eq!(undo_history.current(), &5);
     assert_eq!(undo_history.history.len(), 1);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     undo_history.commit_change(2);
     undo_history.commit_change(3);
@@ -432,19 +432,19 @@ fn clear() {
     assert_eq!(undo_history.current(), &3);
     assert_eq!(undo_history.history.len(), 3);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 3);
+    assert_eq!(undo_history.current_index, 2);
 
     undo_history.clear();
     assert_eq!(undo_history.current(), &3);
     assert_eq!(undo_history.history.len(), 1);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     assert_eq!(undo_history.redo(), None);
     assert_eq!(undo_history.current(), &3);
     assert_eq!(undo_history.history.len(), 1);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 }
 
 #[test]
@@ -461,19 +461,19 @@ fn clear_with_new_initial() {
     assert_eq!(undo_history.current(), &3);
     assert_eq!(undo_history.history.len(), 5);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 3);
+    assert_eq!(undo_history.current_index, 2);
 
     undo_history.clear_with_new_initial(42);
     assert_eq!(undo_history.current(), &42);
     assert_eq!(undo_history.history.len(), 1);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     assert_eq!(undo_history.undo(), None);
     assert_eq!(undo_history.current(), &42);
     assert_eq!(undo_history.history.len(), 1);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     undo_history.commit_change(2);
     undo_history.commit_change(3);
@@ -481,17 +481,17 @@ fn clear_with_new_initial() {
     assert_eq!(undo_history.current(), &3);
     assert_eq!(undo_history.history.len(), 3);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 3);
+    assert_eq!(undo_history.current_index, 2);
 
     undo_history.clear_with_new_initial(21);
     assert_eq!(undo_history.current(), &21);
     assert_eq!(undo_history.history.len(), 1);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 
     assert_eq!(undo_history.redo(), None);
     assert_eq!(undo_history.current(), &21);
     assert_eq!(undo_history.history.len(), 1);
     assert_eq!(undo_history.history.capacity(), 5);
-    assert_eq!(undo_history.next_index, 1);
+    assert_eq!(undo_history.current_index, 0);
 }
