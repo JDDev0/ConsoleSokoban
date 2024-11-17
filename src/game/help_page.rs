@@ -1,5 +1,6 @@
 use console_lib::{keys, Color, Console};
 
+#[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 enum SectionLayer {
     Section(u32),
     SubSection(u32, u32),
@@ -16,6 +17,7 @@ impl SectionLayer {
     }
 }
 
+#[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 struct Section {
     layer: SectionLayer,
     name: String,
@@ -147,7 +149,9 @@ impl HelpPage {
         table_of_contents.add_section("Gameplay", 4);
         table_of_contents.add_sub_section("Game screen", 4);
         table_of_contents.add_section("Editor", 5);
-        table_of_contents.add_sub_section("Editor Controls", 5);
+        table_of_contents.add_sub_section("Controls", 5);
+        table_of_contents.add_sub_sub_section("Level Pack selection", 5);
+        table_of_contents.add_sub_sub_section("Level selection", 5);
 
         Self {
             table_of_contents,
@@ -411,12 +415,61 @@ impl HelpPage {
                 console.set_color(Color::Blue, Color::Default);
                 console.draw_text("4 Editor\n");
                 console.set_color(Color::Green, Color::Default);
-                console.draw_text("4.1 Editor Controls\n");
+                console.draw_text("4.1 Controls\n");
+                console.set_color(Color::Cyan, Color::Default);
+                console.draw_text("4.1.1 Level Pack selection\n");
 
                 console.set_underline(false);
 
+                console.set_cursor_pos(0, 5);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("ENTER");
                 console.reset_color();
-                console.draw_text("Work in progress"); //TODO
+                console.draw_text(": Select or create a level pack");
+
+                console.set_cursor_pos(0, 6);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("e");
+                console.reset_color();
+                console.draw_text(": Export the selected level pack to the current directory");
+
+                console.set_cursor_pos(0, 7);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("DELETE");
+                console.reset_color();
+                console.draw_text(": Delete the selected level pack");
+
+                console.set_cursor_pos(0, 8);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("ESC");
+                console.reset_color();
+                console.draw_text(": Cancels the creation of a new level pack");
+
+                console.set_underline(true);
+
+                console.set_cursor_pos(0, 10);
+                console.set_color(Color::Cyan, Color::Default);
+                console.draw_text("4.1.2 Level selection\n");
+
+                console.set_underline(false);
+
+                console.set_cursor_pos(0, 11);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("ENTER");
+                console.reset_color();
+                console.draw_text(": Select or create a level");
+
+                console.set_cursor_pos(0, 12);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("DELETE");
+                console.reset_color();
+                console.draw_text(": Delete the selected level");
+
+                console.set_cursor_pos(0, 13);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("ESC");
+                console.reset_color();
+                console.draw_text(": Cancels the creation of a new level");
             },
             _ => {},
         }
