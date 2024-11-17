@@ -2105,11 +2105,11 @@ impl ScreenLevelEditor {
                     self.level = Some(level.clone());
 
                     if self.cursor_pos.0 >= level.width() {
-                        self.cursor_pos.0 = level.width();
+                        self.cursor_pos.0 = level.width() - 1;
                     }
 
                     if self.cursor_pos.1 >= level.height() {
-                        self.cursor_pos.1 = level.height();
+                        self.cursor_pos.1 = level.height() - 1;
                     }
                 }
             },
