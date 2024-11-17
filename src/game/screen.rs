@@ -2274,11 +2274,15 @@ impl Screen for ScreenLevelEditor {
             if let Err(err) = game_state.editor_state.get_current_level_pack().unwrap().save_editor_level_pack() {
                 game_state.open_dialog(Box::new(DialogOk::new_error(format!("Cannot save: {}", err))));
             }
-        }
 
-        self.level = None;
-        self.level_undo_history.clear();
-        game_state.set_screen(ScreenId::LevelPackEditor);
+            self.level = None;
+            self.level_undo_history.clear();
+            game_state.set_screen(ScreenId::LevelPackEditor);
+        }else if selection == DialogSelection::No {
+            self.level = None;
+            self.level_undo_history.clear();
+            game_state.set_screen(ScreenId::LevelPackEditor);
+        }
     }
 
     fn on_set_screen(&mut self, game_state: &mut GameState) {
