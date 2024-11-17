@@ -152,9 +152,9 @@ impl HelpPage {
         table_of_contents.add_sub_section("Controls", 6);
         table_of_contents.add_sub_sub_section("Level Pack selection", 6);
         table_of_contents.add_sub_sub_section("Level selection", 6);
+        table_of_contents.add_sub_sub_section("Level editor (Playing mode)", 7);
         table_of_contents.add_sub_sub_section("Level editor (Editing mode)", 7);
-        table_of_contents.add_sub_sub_section("Level editor (Editing mode - Tiles)", 7);
-        table_of_contents.add_sub_sub_section("Level editor (Playing mode)", 8);
+        table_of_contents.add_sub_sub_section("Level editor (Editing mode - Tiles)", 8);
 
         Self {
             table_of_contents,
@@ -475,118 +475,9 @@ impl HelpPage {
                 console.draw_text(": Cancels the creation of a new level");
             },
             7 => {
+
                 console.set_color(Color::Cyan, Color::Default);
-                console.draw_text("4.1.3 Level editor (Editing mode)\n");
-
-                console.set_underline(false);
-
-                console.set_cursor_pos(0, 3);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("Arrow keys");
-                console.reset_color();
-                console.draw_text(": Moves cursor position\n");
-
-                console.set_cursor_pos(0, 4);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("w a s d");
-                console.reset_color();
-                console.draw_text(": Sets the direction of the cursor");
-
-                console.set_cursor_pos(0, 5);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("i");
-                console.reset_color();
-                console.draw_text(": Inserts a row or column in the cursor direction");
-
-                console.set_cursor_pos(0, 6);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("c");
-                console.reset_color();
-                console.draw_text(": Copies the current row or column in the cursor direction");
-
-                console.set_cursor_pos(0, 7);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("r");
-                console.reset_color();
-                console.draw_text(": Goes into the playing mode");
-
-                console.set_underline(true);
-
-                console.set_cursor_pos(0, 9);
-                console.set_color(Color::Cyan, Color::Default);
-                console.draw_text("4.1.4 Level editor (Editing mode - Tiles)\n");
-
-                console.set_underline(false);
-
-                console.set_cursor_pos(0, 10);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("SPACE");
-                console.reset_color();
-                console.draw_text(": Moves the cursor in cursor direction");
-
-                console.set_cursor_pos(0, 11);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("-");
-                console.reset_color();
-                console.draw_text(": Inserts an empty tile");
-
-                console.set_cursor_pos(0, 12);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("< ^ > v");
-                console.reset_color();
-                console.draw_text(": Inserts an one-way door tile");
-
-                console.set_cursor_pos(0, 13);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("#");
-                console.reset_color();
-                console.draw_text(": Inserts a wall tile");
-
-                console.set_cursor_pos(0, 14);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("p");
-                console.reset_color();
-                console.draw_text(": Inserts a player tile");
-
-                console.set_cursor_pos(0, 15);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("*");
-                console.reset_color();
-                console.draw_text(": Inserts a key tile");
-
-                console.set_cursor_pos(0, 16);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("~");
-                console.reset_color();
-                console.draw_text(": Inserts a key in goal tile");
-
-                console.set_cursor_pos(0, 17);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("=");
-                console.reset_color();
-                console.draw_text(": Inserts a closed door tile");
-
-                console.set_cursor_pos(0, 18);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("@");
-                console.reset_color();
-                console.draw_text(": Inserts a box tile");
-
-                console.set_cursor_pos(0, 19);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("+");
-                console.reset_color();
-                console.draw_text(": Inserts a box in goal tile");
-
-                console.set_cursor_pos(0, 20);
-                console.set_color(Color::LightRed, Color::Default);
-                console.draw_text("x");
-                console.reset_color();
-                console.draw_text(": Inserts a goal tile");
-            },
-            8 => {
-                console.set_color(Color::Cyan, Color::Default);
-                console.draw_text("4.1.5 Level editor (Playing mode)\n");
+                console.draw_text("4.1.3 Level editor (Playing mode)\n");
 
                 console.set_underline(false);
 
@@ -601,6 +492,128 @@ impl HelpPage {
                 console.draw_text("r");
                 console.reset_color();
                 console.draw_text(": Goes into the editing mode");
+
+                console.set_underline(true);
+
+                console.set_cursor_pos(0, 6);
+                console.set_color(Color::Cyan, Color::Default);
+                console.draw_text("4.1.4 Level editor (Editing mode)\n");
+
+                console.set_underline(false);
+
+                console.set_cursor_pos(0, 7);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("Arrow keys");
+                console.reset_color();
+                console.draw_text(": Moves cursor position\n");
+
+                console.set_cursor_pos(0, 8);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("w a s d");
+                console.reset_color();
+                console.draw_text(": Sets the direction of the cursor");
+
+                console.set_cursor_pos(0, 9);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("i");
+                console.reset_color();
+                console.draw_text(": Inserts a row or column in the cursor direction");
+
+                console.set_cursor_pos(0, 10);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("c");
+                console.reset_color();
+                console.draw_text(": Copies the current row or column in the cursor direction");
+
+                console.set_cursor_pos(0, 11);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("z");
+                console.reset_color();
+                console.draw_text(": Undo");
+
+                console.set_cursor_pos(0, 12);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("y");
+                console.reset_color();
+                console.draw_text(": Redo");
+
+                console.set_cursor_pos(0, 13);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("r");
+                console.reset_color();
+                console.draw_text(": Goes into the playing mode");
+            },
+            8 => {
+                console.set_color(Color::Cyan, Color::Default);
+                console.draw_text("4.1.5 Level editor (Editing mode - Tiles)\n");
+
+                console.set_underline(false);
+
+                console.set_cursor_pos(0, 3);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("SPACE");
+                console.reset_color();
+                console.draw_text(": Moves the cursor in cursor direction");
+
+                console.set_cursor_pos(0, 4);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("-");
+                console.reset_color();
+                console.draw_text(": Inserts an empty tile");
+
+                console.set_cursor_pos(0, 5);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("< ^ > v");
+                console.reset_color();
+                console.draw_text(": Inserts an one-way door tile");
+
+                console.set_cursor_pos(0, 6);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("#");
+                console.reset_color();
+                console.draw_text(": Inserts a wall tile");
+
+                console.set_cursor_pos(0, 7);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("p");
+                console.reset_color();
+                console.draw_text(": Inserts a player tile");
+
+                console.set_cursor_pos(0, 8);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("*");
+                console.reset_color();
+                console.draw_text(": Inserts a key tile");
+
+                console.set_cursor_pos(0, 9);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("~");
+                console.reset_color();
+                console.draw_text(": Inserts a key in goal tile");
+
+                console.set_cursor_pos(0, 10);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("=");
+                console.reset_color();
+                console.draw_text(": Inserts a closed door tile");
+
+                console.set_cursor_pos(0, 11);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("@");
+                console.reset_color();
+                console.draw_text(": Inserts a box tile");
+
+                console.set_cursor_pos(0, 12);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("+");
+                console.reset_color();
+                console.draw_text(": Inserts a box in goal tile");
+
+                console.set_cursor_pos(0, 13);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("x");
+                console.reset_color();
+                console.draw_text(": Inserts a goal tile");
             },
             _ => {},
         }
