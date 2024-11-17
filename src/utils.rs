@@ -60,6 +60,8 @@ impl<T> UndoHistory<T> {
     }
 
     pub fn clear(&mut self) {
+        //Last element of history is current value and should be the new initial value
+        self.history.swap_remove_back(0);
         self.history.truncate(1);
         self.next_index = 1;
     }
@@ -490,13 +492,13 @@ mod tests {
         assert_eq!(undo_history.next_index, 3);
 
         undo_history.clear();
-        assert_eq!(undo_history.current(), &1);
+        assert_eq!(undo_history.current(), &5);
         assert_eq!(undo_history.history.len(), 1);
         assert_eq!(undo_history.history.capacity(), 5);
         assert_eq!(undo_history.next_index, 1);
 
         assert_eq!(undo_history.undo(), None);
-        assert_eq!(undo_history.current(), &1);
+        assert_eq!(undo_history.current(), &5);
         assert_eq!(undo_history.history.len(), 1);
         assert_eq!(undo_history.history.capacity(), 5);
         assert_eq!(undo_history.next_index, 1);
@@ -510,13 +512,13 @@ mod tests {
         assert_eq!(undo_history.next_index, 3);
 
         undo_history.clear();
-        assert_eq!(undo_history.current(), &1);
+        assert_eq!(undo_history.current(), &3);
         assert_eq!(undo_history.history.len(), 1);
         assert_eq!(undo_history.history.capacity(), 5);
         assert_eq!(undo_history.next_index, 1);
 
         assert_eq!(undo_history.redo(), None);
-        assert_eq!(undo_history.current(), &1);
+        assert_eq!(undo_history.current(), &3);
         assert_eq!(undo_history.history.len(), 1);
         assert_eq!(undo_history.history.capacity(), 5);
         assert_eq!(undo_history.next_index, 1);
