@@ -1,4 +1,4 @@
-use console_lib::{keys, Color, Console};
+use console_lib::{Key, Color, Console};
 use std::cmp::Ordering;
 use std::mem;
 use std::str::FromStr;
@@ -32,7 +32,7 @@ pub trait Screen {
 
     fn update(&mut self, game_state: &mut GameState) {}
 
-    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {}
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: Key) {}
     fn on_mouse_pressed(&mut self, game_state: &mut GameState, column: usize, row: usize) {}
 
     fn on_dialog_selection(&mut self, game_state: &mut GameState, selection: DialogSelection) {}
@@ -108,27 +108,27 @@ impl Screen for ScreenStartMenu {
         console.draw_text("\n\\------------------------------------------------------------------------/");
     }
 
-    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
-        if key == keys::ESC {
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: Key) {
+        if key == Key::ESC {
             game_state.open_dialog(Box::new(DialogYesNo::new("Exit game?")));
 
             return;
         }
 
-        if key == keys::F1 {
+        if key == Key::F1 {
             game_state.open_help_page();
 
             return;
         }
 
-        if key == keys::ENTER {
+        if key == Key::ENTER {
             game_state.set_screen(ScreenId::SelectLevelPack);
         }
     }
 
     fn on_mouse_pressed(&mut self, game_state: &mut GameState, column: usize, row: usize) {
         if row == 16 && column > 26 && column < 32 {
-            self.on_key_pressed(game_state, keys::ENTER);
+            self.on_key_pressed(game_state, Key::ENTER);
         }
 
         if row == 21 && column > 64 && column < 73 {
@@ -271,14 +271,14 @@ impl Screen for ScreenSelectLevelPack {
         }
     }
 
-    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
-        if key == keys::ESC {
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: Key) {
+        if key == Key::ESC {
             game_state.set_screen(ScreenId::StartMenu);
 
             return;
         }
 
-        if key == keys::F1 {
+        if key == Key::F1 {
             game_state.open_help_page();
 
             return;
@@ -289,28 +289,28 @@ impl Screen for ScreenSelectLevelPack {
             let entry_count = game_state.get_level_pack_count() + 1;
 
             match key {
-                keys::LEFT => {
+                Key::LEFT => {
                     if game_state.current_level_pack_index == 0 {
                         break 'outer;
                     }
 
                     game_state.current_level_pack_index -= 1;
                 },
-                keys::UP => {
+                Key::UP => {
                     if game_state.current_level_pack_index <= 24 {
                         break 'outer;
                     }
 
                     game_state.current_level_pack_index -= 24;
                 },
-                keys::RIGHT => {
+                Key::RIGHT => {
                     if game_state.current_level_pack_index + 1 >= entry_count {
                         break 'outer;
                     }
 
                     game_state.current_level_pack_index += 1;
                 },
-                keys::DOWN => {
+                Key::DOWN => {
                     if game_state.current_level_pack_index + 24 >= entry_count {
                         break 'outer;
                     }
@@ -318,7 +318,7 @@ impl Screen for ScreenSelectLevelPack {
                     game_state.current_level_pack_index += 24;
                 },
 
-                keys::ENTER => {
+                Key::ENTER => {
                     if game_state.get_level_pack_index() == game_state.get_level_pack_count() {
                         //Level Pack Editor entry
                         game_state.set_level_index(0);
@@ -352,7 +352,7 @@ impl Screen for ScreenSelectLevelPack {
         let level_pack_index = column/3 + (row - 1)/2*24;
         if level_pack_index < entry_count {
             game_state.set_level_pack_index(level_pack_index);
-            self.on_key_pressed(game_state, keys::ENTER);
+            self.on_key_pressed(game_state, Key::ENTER);
         }
     }
 }
@@ -481,14 +481,14 @@ impl Screen for ScreenSelectLevel {
         }
     }
 
-    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
-        if key == keys::ESC {
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: Key) {
+        if key == Key::ESC {
             game_state.set_screen(ScreenId::SelectLevelPack);
 
             return;
         }
 
-        if key == keys::F1 {
+        if key == Key::F1 {
             game_state.open_help_page();
 
             return;
@@ -496,21 +496,21 @@ impl Screen for ScreenSelectLevel {
 
         'outer: {
             match key {
-                keys::LEFT => {
+                Key::LEFT => {
                     if self.selected_level == 0 {
                         break 'outer;
                     }
 
                     self.selected_level -= 1;
                 },
-                keys::UP => {
+                Key::UP => {
                     if self.selected_level < 24 {
                         break 'outer;
                     }
 
                     self.selected_level -= 24;
                 },
-                keys::RIGHT => {
+                Key::RIGHT => {
                     if self.selected_level + 1 >= game_state.get_current_level_pack().
                             as_ref().unwrap().level_count() {
                         break 'outer;
@@ -518,7 +518,7 @@ impl Screen for ScreenSelectLevel {
 
                     self.selected_level += 1;
                 },
-                keys::DOWN => {
+                Key::DOWN => {
                     if self.selected_level + 24 >= game_state.get_current_level_pack().
                             as_ref().unwrap().level_count() {
                         break 'outer;
@@ -527,7 +527,7 @@ impl Screen for ScreenSelectLevel {
                     self.selected_level += 24;
                 },
 
-                keys::ENTER if self.selected_level <= game_state.get_current_level_pack().
+                Key::ENTER if self.selected_level <= game_state.get_current_level_pack().
                         as_ref().unwrap().min_level_not_completed() => {
                     game_state.set_level_index(self.selected_level);
                     game_state.set_screen(ScreenId::InGame);
@@ -546,7 +546,7 @@ impl Screen for ScreenSelectLevel {
         let level_index = column/3 + (row - 1)/2*24;
         if level_index < game_state.get_current_level_pack().as_ref().unwrap().level_count() {
             self.selected_level = level_index;
-            self.on_key_pressed(game_state, keys::ENTER);
+            self.on_key_pressed(game_state, Key::ENTER);
         }
     }
 
@@ -864,8 +864,8 @@ impl Screen for ScreenInGame {
         }
     }
 
-    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
-        if key == keys::ESC {
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: Key) {
+        if key == Key::ESC {
             if self.game_over_flag {
                 self.continue_flag = false;
                 self.game_over_flag = false;
@@ -882,7 +882,7 @@ impl Screen for ScreenInGame {
             return;
         }
 
-        if key == keys::F1 {
+        if key == Key::F1 {
             self.time_start_in_menu = Some(SystemTime::now());
 
             game_state.open_help_page();
@@ -897,7 +897,7 @@ impl Screen for ScreenInGame {
 
         //Level end
         if self.continue_flag {
-            if key == keys::ENTER {
+            if key == Key::ENTER {
                 self.continue_flag = false;
 
                 //All levels completed
@@ -910,7 +910,7 @@ impl Screen for ScreenInGame {
                 }
 
                 self.start_level(game_state.get_current_level_pack().unwrap().levels()[game_state.current_level_index].level());
-            }else if key == 'r' as i32 {
+            }else if key == Key::R {
                 self.start_level(level_pack.levels()[current_level_index].level());
             }
 
@@ -918,7 +918,7 @@ impl Screen for ScreenInGame {
         }
 
         //One step back
-        if key == 'z' as i32 {
+        if key == Key::Z {
             mem::swap(&mut self.level_now, &mut self.level_now_last_step);
 
             //Reset move count
@@ -929,11 +929,11 @@ impl Screen for ScreenInGame {
         }
 
         //Reset
-        if key == 'r' as i32 {
+        if key == Key::R {
             self.start_level(level_pack.levels()[current_level_index].level());
         }
 
-        if console_lib::is_arrow_key(key) {
+        if key.is_arrow_key() {
             let level_now_before_move = self.level_now.clone();
 
             let width = self.level_now.as_ref().unwrap().width();
@@ -942,12 +942,12 @@ impl Screen for ScreenInGame {
             let (x_from, y_from) = self.player_pos;
 
             let x_to = match key {
-                keys::LEFT => if x_from == 0 {
+                Key::LEFT => if x_from == 0 {
                     width - 1
                 }else {
                     x_from - 1
                 },
-                keys::RIGHT => if x_from == width - 1 {
+                Key::RIGHT => if x_from == width - 1 {
                     0
                 }else {
                     x_from + 1
@@ -955,12 +955,12 @@ impl Screen for ScreenInGame {
                 _ => x_from,
             };
             let y_to = match key {
-                keys::UP => if y_from == 0 {
+                Key::UP => if y_from == 0 {
                     height - 1
                 }else {
                     y_from - 1
                 },
-                keys::DOWN => if y_from == height - 1 {
+                Key::DOWN => if y_from == height - 1 {
                     0
                 }else {
                     y_from + 1
@@ -969,10 +969,10 @@ impl Screen for ScreenInGame {
             };
 
             let one_way_door_tile = match key {
-                keys::LEFT => Tile::OneWayLeft,
-                keys::UP => Tile::OneWayUp,
-                keys::RIGHT => Tile::OneWayRight,
-                keys::DOWN => Tile::OneWayDown,
+                Key::LEFT => Tile::OneWayLeft,
+                Key::UP => Tile::OneWayUp,
+                Key::RIGHT => Tile::OneWayRight,
+                Key::DOWN => Tile::OneWayDown,
                 _ => return, //Should never happen
             };
 
@@ -1220,22 +1220,21 @@ impl Screen for ScreenSelectLevelPackEditor {
         }
     }
 
-    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: Key) {
         if self.is_creating_new_level_pack {
             match key {
-                key if (0..=127).contains(&key) &&
-                        ((key as u8 as char).is_alphanumeric() || key as u8 == b'_' || key as u8 == b'-') => {
+                key if key.is_ascii() && (key.is_alphanumeric() || key == Key::UNDERSCORE || key == Key::MINUS) => {
                     if self.new_level_pack_id.len() >= Game::MAX_LEVEL_PACK_ID_LEN {
                         return;
                     }
                     
-                    self.new_level_pack_id += &format!("{}", key as u8 as char);
+                    self.new_level_pack_id += &format!("{}", key.to_ascii().unwrap() as char);
                 },
-                keys::DELETE => {
+                Key::DELETE => {
                     self.new_level_pack_id.pop();
                 },
 
-                keys::ENTER => {
+                Key::ENTER => {
                     if self.new_level_pack_id.len() < 3 {
                         game_state.open_dialog(Box::new(DialogOk::new_error("Level pack ID must have at least 3 characters!")));
 
@@ -1285,7 +1284,7 @@ impl Screen for ScreenSelectLevelPackEditor {
                     game_state.set_screen(ScreenId::LevelPackEditor);
                 },
 
-                keys::ESC => {
+                Key::ESC => {
                     self.is_creating_new_level_pack = false;
                     self.new_level_pack_id = String::new();
                 },
@@ -1296,25 +1295,25 @@ impl Screen for ScreenSelectLevelPackEditor {
             return;
         }
 
-        if key == keys::ESC {
+        if key == Key::ESC {
             game_state.set_screen(ScreenId::SelectLevelPack);
 
             return;
         }
 
-        if key == keys::F1 {
+        if key == Key::F1 {
             game_state.open_help_page();
 
             return;
         }
 
-        if key == b'e' as i32 && game_state.editor_state.selected_level_pack_index != game_state.editor_state.get_level_pack_count() {
+        if key == Key::E && game_state.editor_state.selected_level_pack_index != game_state.editor_state.get_level_pack_count() {
             self.is_exporting_level_pack = true;
 
             game_state.open_dialog(Box::new(DialogYesNo::new("Do you want to export the level pack to the current directory?")));
         }
 
-        if key == keys::DELETE && game_state.editor_state.selected_level_pack_index != game_state.editor_state.get_level_pack_count() {
+        if key == Key::DELETE && game_state.editor_state.selected_level_pack_index != game_state.editor_state.get_level_pack_count() {
             self.is_deleting_level_pack = true;
 
             game_state.open_dialog(Box::new(DialogYesNo::new(format!(
@@ -1328,28 +1327,28 @@ impl Screen for ScreenSelectLevelPackEditor {
             let entry_count = game_state.editor_state.get_level_pack_count() + 1;
 
             match key {
-                keys::LEFT => {
+                Key::LEFT => {
                     if game_state.editor_state.selected_level_pack_index == 0 {
                         break 'outer;
                     }
 
                     game_state.editor_state.selected_level_pack_index -= 1;
                 },
-                keys::UP => {
+                Key::UP => {
                     if game_state.editor_state.selected_level_pack_index <= 24 {
                         break 'outer;
                     }
 
                     game_state.editor_state.selected_level_pack_index -= 24;
                 },
-                keys::RIGHT => {
+                Key::RIGHT => {
                     if game_state.editor_state.selected_level_pack_index + 1 >= entry_count {
                         break 'outer;
                     }
 
                     game_state.editor_state.selected_level_pack_index += 1;
                 },
-                keys::DOWN => {
+                Key::DOWN => {
                     if game_state.editor_state.selected_level_pack_index + 24 >= entry_count {
                         break 'outer;
                     }
@@ -1357,7 +1356,7 @@ impl Screen for ScreenSelectLevelPackEditor {
                     game_state.editor_state.selected_level_pack_index += 24;
                 },
 
-                keys::ENTER => {
+                Key::ENTER => {
                     if game_state.editor_state.selected_level_pack_index == game_state.editor_state.get_level_pack_count() {
                         //Level Pack Editor entry
                         if game_state.editor_state.get_level_pack_count() == LevelPack::MAX_LEVEL_PACK_COUNT {
@@ -1390,7 +1389,7 @@ impl Screen for ScreenSelectLevelPackEditor {
         let level_pack_index = column/3 + (row - 1)/2*24;
         if level_pack_index < entry_count {
             game_state.editor_state.selected_level_pack_index = level_pack_index;
-            self.on_key_pressed(game_state, keys::ENTER);
+            self.on_key_pressed(game_state, Key::ENTER);
         }
     }
 
@@ -1594,25 +1593,25 @@ impl Screen for ScreenLevelPackEditor {
         }
     }
 
-    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: Key) {
         if self.is_creating_new_level {
             match key {
-                key if (0..=127).contains(&key) && ((key as u8 as char).is_numeric()) => {
+                key if key.is_ascii() && key.is_numeric() => {
                     if self.is_editing_height {
                         if self.new_level_height_str.len() >= 2 {
                             return;
                         }
 
-                        self.new_level_height_str += &format!("{}", key as u8 as char);
+                        self.new_level_height_str += &format!("{}", key.to_ascii().unwrap() as char);
                     }else {
                         if self.new_level_width_str.len() >= 2 {
                             return;
                         }
 
-                        self.new_level_width_str += &format!("{}", key as u8 as char);
+                        self.new_level_width_str += &format!("{}", key.to_ascii().unwrap() as char);
                     }
                 },
-                keys::DELETE => {
+                Key::DELETE => {
                     if self.is_editing_height {
                         self.new_level_height_str.pop();
                     }else {
@@ -1620,11 +1619,11 @@ impl Screen for ScreenLevelPackEditor {
                     }
                 },
 
-                keys::TAB => {
+                Key::TAB => {
                     self.is_editing_height = !self.is_editing_height;
                 },
 
-                keys::ENTER => {
+                Key::ENTER => {
                     if !(1..=2).contains(&self.new_level_width_str.len()) {
                         game_state.open_dialog(Box::new(DialogOk::new_error(format!("Width must be >= 3 and <= {}!", Game::LEVEL_MAX_WIDTH))));
 
@@ -1677,7 +1676,7 @@ impl Screen for ScreenLevelPackEditor {
                     game_state.set_screen(ScreenId::LevelEditor);
                 },
 
-                keys::ESC => {
+                Key::ESC => {
                     self.is_creating_new_level = false;
                     self.is_editing_height = false;
                     self.new_level_width_str = String::new();
@@ -1690,13 +1689,13 @@ impl Screen for ScreenLevelPackEditor {
             return;
         }
 
-        if key == keys::ESC {
+        if key == Key::ESC {
             game_state.set_screen(ScreenId::SelectLevelPackEditor);
 
             return;
         }
 
-        if key == keys::F1 {
+        if key == Key::F1 {
             game_state.open_help_page();
 
             return;
@@ -1707,28 +1706,28 @@ impl Screen for ScreenLevelPackEditor {
             let entry_count = game_state.editor_state.get_current_level_pack().unwrap().level_count() + 1;
 
             match key {
-                keys::LEFT => {
+                Key::LEFT => {
                     if game_state.editor_state.selected_level_index == 0 {
                         break 'outer;
                     }
 
                     game_state.editor_state.selected_level_index -= 1;
                 },
-                keys::UP => {
+                Key::UP => {
                     if game_state.editor_state.selected_level_index <= 24 {
                         break 'outer;
                     }
 
                     game_state.editor_state.selected_level_index -= 24;
                 },
-                keys::RIGHT => {
+                Key::RIGHT => {
                     if game_state.editor_state.selected_level_index + 1 >= entry_count {
                         break 'outer;
                     }
 
                     game_state.editor_state.selected_level_index += 1;
                 },
-                keys::DOWN => {
+                Key::DOWN => {
                     if game_state.editor_state.selected_level_index + 24 >= entry_count {
                         break 'outer;
                     }
@@ -1736,7 +1735,7 @@ impl Screen for ScreenLevelPackEditor {
                     game_state.editor_state.selected_level_index += 24;
                 },
 
-                keys::ENTER => {
+                Key::ENTER => {
                     if game_state.editor_state.selected_level_index == game_state.editor_state.get_current_level_pack().unwrap().level_count() {
                         //Level Editor entry
                         if game_state.editor_state.get_current_level_pack().unwrap().level_count() == LevelPack::MAX_LEVEL_COUNT_PER_PACK {
@@ -1753,7 +1752,7 @@ impl Screen for ScreenLevelPackEditor {
                     }
                 },
 
-                keys::DELETE => {
+                Key::DELETE => {
                     if game_state.editor_state.selected_level_index != game_state.editor_state.get_current_level_pack().unwrap().level_count() {
                         self.is_deleting_level = true;
 
@@ -1777,7 +1776,7 @@ impl Screen for ScreenLevelPackEditor {
         let level_pack_index = column/3 + (row - 1)/2*24;
         if level_pack_index < entry_count {
             game_state.editor_state.selected_level_index = level_pack_index;
-            self.on_key_pressed(game_state, keys::ENTER);
+            self.on_key_pressed(game_state, Key::ENTER);
         }
     }
 
@@ -1821,21 +1820,21 @@ impl ScreenLevelEditor {
         }
     }
 
-    fn on_key_pressed_playing(&mut self, key: i32) {
+    fn on_key_pressed_playing(&mut self, key: Key) {
         if let Some(level) = self.playing_level.as_mut() {
-            if console_lib::is_arrow_key(key) {
+            if key.is_arrow_key() {
                 let width = level.width();
                 let height = level.height();
 
                 let (x_from, y_from) = self.player_pos;
 
                 let x_to = match key {
-                    keys::LEFT => if x_from == 0 {
+                    Key::LEFT => if x_from == 0 {
                         width - 1
                     }else {
                         x_from - 1
                     },
-                    keys::RIGHT => if x_from == width - 1 {
+                    Key::RIGHT => if x_from == width - 1 {
                         0
                     }else {
                         x_from + 1
@@ -1843,12 +1842,12 @@ impl ScreenLevelEditor {
                     _ => x_from,
                 };
                 let y_to = match key {
-                    keys::UP => if y_from == 0 {
+                    Key::UP => if y_from == 0 {
                         height - 1
                     }else {
                         y_from - 1
                     },
-                    keys::DOWN => if y_from == height - 1 {
+                    Key::DOWN => if y_from == height - 1 {
                         0
                     }else {
                         y_from + 1
@@ -1857,10 +1856,10 @@ impl ScreenLevelEditor {
                 };
 
                 let one_way_door_tile = match key {
-                    keys::LEFT => Tile::OneWayLeft,
-                    keys::UP => Tile::OneWayUp,
-                    keys::RIGHT => Tile::OneWayRight,
-                    keys::DOWN => Tile::OneWayDown,
+                    Key::LEFT => Tile::OneWayLeft,
+                    Key::UP => Tile::OneWayUp,
+                    Key::RIGHT => Tile::OneWayRight,
+                    Key::DOWN => Tile::OneWayDown,
                     _ => return, //Should never happen
                 };
 
@@ -1893,30 +1892,30 @@ impl ScreenLevelEditor {
         }
     }
 
-    fn on_key_pressed_editing(&mut self, game_state: &mut GameState, key: i32) {
+    fn on_key_pressed_editing(&mut self, game_state: &mut GameState, key: Key) {
         match key {
-            keys::LEFT => {
+            Key::LEFT => {
                 if self.cursor_pos.0 > 0 {
                     self.cursor_pos.0 -= 1;
                 }else if let Some(ref level) = self.level {
                     self.cursor_pos.0 = level.width() - 1;
                 }
             },
-            keys::UP => {
+            Key::UP => {
                 if self.cursor_pos.1 > 0 {
                     self.cursor_pos.1 -= 1;
                 }else if let Some(ref level) = self.level {
                     self.cursor_pos.1 = level.height() - 1;
                 }
             },
-            keys::RIGHT => {
+            Key::RIGHT => {
                 if self.level.as_ref().is_some_and(|level| self.cursor_pos.0 < level.width() - 1) {
                     self.cursor_pos.0 += 1;
                 }else {
                     self.cursor_pos.0 = 0;
                 }
             },
-            keys::DOWN => {
+            Key::DOWN => {
                 if self.level.as_ref().is_some_and(|level| self.cursor_pos.1 < level.height() - 1) {
                     self.cursor_pos.1 += 1;
                 }else {
@@ -1924,237 +1923,226 @@ impl ScreenLevelEditor {
                 }
             },
 
+            Key::DELETE => {
+                if self.is_vertical_input {
+                    if self.level.as_ref().unwrap().width() == 3 {
+                        game_state.open_dialog(Box::new(DialogOk::new_error(format!(
+                            "Level width limit reached (min: {})",
+                            3,
+                        ))));
+
+                        return;
+                    }
+
+                    let index = self.cursor_pos.0;
+
+                    let level_orig = self.level.clone().unwrap();
+                    let mut new_level = Level::new(level_orig.width() - 1, level_orig.height());
+
+                    if index == new_level.width() {
+                        self.cursor_pos.0 -= 1;
+                    }
+
+                    for i in 0..level_orig.height() {
+                        for mut j in 0..level_orig.width() {
+                            let tile = level_orig.get_tile(j, i).unwrap().clone();
+
+                            if j == index {
+                                continue;
+                            }
+
+                            if j >= index {
+                                j -= 1;
+                            }
+
+                            new_level.set_tile(j, i, tile);
+                        }
+                    }
+
+                    self.level = Some(new_level);
+                    self.on_level_changed();
+                }else {
+                    if self.level.as_ref().unwrap().height() == 3 {
+                        game_state.open_dialog(Box::new(DialogOk::new_error(format!(
+                            "Level height limit reached (min: {})",
+                            3,
+                        ))));
+
+                        return;
+                    }
+
+                    let index = self.cursor_pos.1;
+
+                    let level_orig = self.level.clone().unwrap();
+                    let mut new_level = Level::new(level_orig.width(), level_orig.height() - 1);
+
+                    if index == new_level.height() {
+                        self.cursor_pos.1 -= 1;
+                    }
+
+                    for i in 0..level_orig.width() {
+                        for mut j in 0..level_orig.height() {
+                            let tile = level_orig.get_tile(i, j).unwrap().clone();
+
+                            if j == index {
+                                continue;
+                            }
+
+                            if j >= index {
+                                j -= 1;
+                            }
+
+                            new_level.set_tile(i, j, tile);
+                        }
+                    }
+
+                    self.level = Some(new_level);
+                    self.on_level_changed();
+                }
+            },
+
+            Key::W | Key::A | Key::S | Key::D => {
+                self.is_vertical_input = key == Key::W || key == Key::S;
+                self.is_reverse_input = key == Key::W || key == Key::A;
+            },
+
+            Key::C | Key::I => {
+                let is_copy = key == Key::C;
+
+                if self.is_vertical_input {
+                    if self.level.as_ref().unwrap().height() == Game::LEVEL_MAX_HEIGHT {
+                        game_state.open_dialog(Box::new(DialogOk::new_error(format!(
+                            "Level height limit reached (max: {})",
+                            Game::LEVEL_MAX_HEIGHT,
+                        ))));
+
+                        return;
+                    }
+
+                    let index_orig = self.cursor_pos.1;
+                    if !self.is_reverse_input {
+                        self.cursor_pos.1 += 1;
+                    }
+                    let index = self.cursor_pos.1;
+
+                    let level_orig = self.level.clone().unwrap();
+                    let mut new_level = Level::new(level_orig.width(), level_orig.height() + 1);
+
+                    for i in 0..level_orig.width() {
+                        for mut j in 0..level_orig.height() {
+                            let tile = level_orig.get_tile(i, j).unwrap().clone();
+
+                            if j >= index {
+                                j += 1;
+                            }
+
+                            new_level.set_tile(i, j, tile);
+                        }
+
+                        let tile = if is_copy {
+                            level_orig.get_tile(i, index_orig).unwrap().clone()
+                        }else {
+                            Tile::Empty
+                        };
+                        new_level.set_tile(i, index, tile);
+                    }
+
+                    self.level = Some(new_level);
+                    self.on_level_changed();
+                }else {
+                    if self.level.as_ref().unwrap().width() == Game::LEVEL_MAX_WIDTH {
+                        game_state.open_dialog(Box::new(DialogOk::new_error(format!(
+                            "Level width limit reached (max: {})",
+                            Game::LEVEL_MAX_WIDTH,
+                        ))));
+
+                        return;
+                    }
+
+                    let index_orig = self.cursor_pos.0;
+                    if !self.is_reverse_input {
+                        self.cursor_pos.0 += 1;
+                    }
+                    let index = self.cursor_pos.0;
+
+                    let level_orig = self.level.clone().unwrap();
+                    let mut new_level = Level::new(level_orig.width() + 1, level_orig.height());
+
+                    for i in 0..level_orig.height() {
+                        for mut j in 0..level_orig.width() {
+                            let tile = level_orig.get_tile(j, i).unwrap().clone();
+
+                            if j >= index {
+                                j += 1;
+                            }
+
+                            new_level.set_tile(j, i, tile);
+                        }
+
+                        let tile = if is_copy {
+                            level_orig.get_tile(index_orig, i).unwrap().clone()
+                        }else {
+                            Tile::Empty
+                        };
+                        new_level.set_tile(index, i, tile);
+                    }
+
+                    self.level = Some(new_level);
+                    self.on_level_changed();
+                }
+            },
+
+            Key::Z | Key::Y => {
+                let is_undo = key == Key::Z;
+
+                let level = if is_undo {
+                    self.level_undo_history.undo()
+                }else {
+                    self.level_undo_history.redo()
+                };
+
+                if let Some(level) = level {
+                    self.level = Some(level.clone());
+
+                    if self.cursor_pos.0 >= level.width() {
+                        self.cursor_pos.0 = level.width();
+                    }
+
+                    if self.cursor_pos.1 >= level.height() {
+                        self.cursor_pos.1 = level.height();
+                    }
+                }
+            },
+
+            key if key.is_ascii() => {
+                if let Ok(tile_input) = Tile::from_ascii(key.to_ascii().unwrap()) {
+                    if tile_input != Tile::Secret {
+                        let tile = self.level.as_mut().unwrap().get_tile_mut(self.cursor_pos.0, self.cursor_pos.1).unwrap();
+
+                        if *tile != tile_input {
+                            *tile = tile_input;
+
+                            self.on_level_changed();
+                        }
+                    }
+                }
+
+                if self.is_vertical_input {
+                    self.on_key_pressed_editing(game_state, if self.is_reverse_input {
+                        Key::UP
+                    }else {
+                        Key::DOWN
+                    });
+                }else {
+                    self.on_key_pressed_editing(game_state, if self.is_reverse_input {
+                        Key::LEFT
+                    }else {
+                        Key::RIGHT
+                    });
+                }
+            },
+
             _ => {},
-        }
-
-        if key == keys::DELETE {
-            if self.is_vertical_input {
-                if self.level.as_ref().unwrap().width() == 3 {
-                    game_state.open_dialog(Box::new(DialogOk::new_error(format!(
-                        "Level width limit reached (min: {})",
-                        3,
-                    ))));
-
-                    return;
-                }
-
-                let index = self.cursor_pos.0;
-
-                let level_orig = self.level.clone().unwrap();
-                let mut new_level = Level::new(level_orig.width() - 1, level_orig.height());
-
-                if index == new_level.width() {
-                    self.cursor_pos.0 -= 1;
-                }
-
-                for i in 0..level_orig.height() {
-                    for mut j in 0..level_orig.width() {
-                        let tile = level_orig.get_tile(j, i).unwrap().clone();
-
-                        if j == index {
-                            continue;
-                        }
-
-                        if j >= index {
-                            j -= 1;
-                        }
-
-                        new_level.set_tile(j, i, tile);
-                    }
-                }
-
-                self.level = Some(new_level);
-                self.on_level_changed();
-            }else {
-                if self.level.as_ref().unwrap().height() == 3 {
-                    game_state.open_dialog(Box::new(DialogOk::new_error(format!(
-                        "Level height limit reached (min: {})",
-                        3,
-                    ))));
-
-                    return;
-                }
-
-                let index = self.cursor_pos.1;
-
-                let level_orig = self.level.clone().unwrap();
-                let mut new_level = Level::new(level_orig.width(), level_orig.height() - 1);
-
-                if index == new_level.height() {
-                    self.cursor_pos.1 -= 1;
-                }
-
-                for i in 0..level_orig.width() {
-                    for mut j in 0..level_orig.height() {
-                        let tile = level_orig.get_tile(i, j).unwrap().clone();
-
-                        if j == index {
-                            continue;
-                        }
-
-                        if j >= index {
-                            j -= 1;
-                        }
-
-                        new_level.set_tile(i, j, tile);
-                    }
-                }
-
-                self.level = Some(new_level);
-                self.on_level_changed();
-            }
-
-            return;
-        }
-
-        if (0..=127).contains(&key) {
-            match key as u8 {
-                key @ (b'd' | b'w' | b'a' | b's') => {
-                    self.is_vertical_input = key == b'w' || key == b's';
-                    self.is_reverse_input = key == b'w' || key == b'a';
-
-                    return;
-                },
-
-                key @ (b'c' | b'i') => {
-                    let is_copy = key == b'c';
-
-                    if self.is_vertical_input {
-                        if self.level.as_ref().unwrap().height() == Game::LEVEL_MAX_HEIGHT {
-                            game_state.open_dialog(Box::new(DialogOk::new_error(format!(
-                                "Level height limit reached (max: {})",
-                                Game::LEVEL_MAX_HEIGHT,
-                            ))));
-
-                            return;
-                        }
-
-                        let index_orig = self.cursor_pos.1;
-                        if !self.is_reverse_input {
-                            self.cursor_pos.1 += 1;
-                        }
-                        let index = self.cursor_pos.1;
-
-                        let level_orig = self.level.clone().unwrap();
-                        let mut new_level = Level::new(level_orig.width(), level_orig.height() + 1);
-
-                        for i in 0..level_orig.width() {
-                            for mut j in 0..level_orig.height() {
-                                let tile = level_orig.get_tile(i, j).unwrap().clone();
-
-                                if j >= index {
-                                    j += 1;
-                                }
-
-                                new_level.set_tile(i, j, tile);
-                            }
-
-                            let tile = if is_copy {
-                                level_orig.get_tile(i, index_orig).unwrap().clone()
-                            }else {
-                                Tile::Empty
-                            };
-                            new_level.set_tile(i, index, tile);
-                        }
-
-                        self.level = Some(new_level);
-                        self.on_level_changed();
-                    }else {
-                        if self.level.as_ref().unwrap().width() == Game::LEVEL_MAX_WIDTH {
-                            game_state.open_dialog(Box::new(DialogOk::new_error(format!(
-                                "Level width limit reached (max: {})",
-                                Game::LEVEL_MAX_WIDTH,
-                            ))));
-
-                            return;
-                        }
-
-                        let index_orig = self.cursor_pos.0;
-                        if !self.is_reverse_input {
-                            self.cursor_pos.0 += 1;
-                        }
-                        let index = self.cursor_pos.0;
-
-                        let level_orig = self.level.clone().unwrap();
-                        let mut new_level = Level::new(level_orig.width() + 1, level_orig.height());
-
-                        for i in 0..level_orig.height() {
-                            for mut j in 0..level_orig.width() {
-                                let tile = level_orig.get_tile(j, i).unwrap().clone();
-
-                                if j >= index {
-                                    j += 1;
-                                }
-
-                                new_level.set_tile(j, i, tile);
-                            }
-
-                            let tile = if is_copy {
-                                level_orig.get_tile(index_orig, i).unwrap().clone()
-                            }else {
-                                Tile::Empty
-                            };
-                            new_level.set_tile(index, i, tile);
-                        }
-
-                        self.level = Some(new_level);
-                        self.on_level_changed();
-                    }
-
-                    return;
-                },
-                key @ (b'z' | b'y') => {
-                    let is_undo = key == b'z';
-
-                    let level = if is_undo {
-                        self.level_undo_history.undo()
-                    }else {
-                        self.level_undo_history.redo()
-                    };
-
-                    if let Some(level) = level {
-                        self.level = Some(level.clone());
-
-                        if self.cursor_pos.0 >= level.width() {
-                            self.cursor_pos.0 = level.width();
-                        }
-
-                        if self.cursor_pos.1 >= level.height() {
-                            self.cursor_pos.1 = level.height();
-                        }
-                    }
-
-                    return;
-                },
-
-                key => {
-                    if let Ok(tile_input) = Tile::from_ascii(key) {
-                        if tile_input != Tile::Secret {
-                            let tile = self.level.as_mut().unwrap().get_tile_mut(self.cursor_pos.0, self.cursor_pos.1).unwrap();
-
-                            if *tile != tile_input {
-                                *tile = tile_input;
-
-                                self.on_level_changed();
-                            }
-                        }
-                    }
-                },
-            }
-
-            if self.is_vertical_input {
-                self.on_key_pressed_editing(game_state, if self.is_reverse_input {
-                    keys::UP
-                }else {
-                    keys::DOWN
-                });
-            }else {
-                self.on_key_pressed_editing(game_state, if self.is_reverse_input {
-                    keys::LEFT
-                }else {
-                    keys::RIGHT
-                });
-            }
         }
     }
 
@@ -2195,21 +2183,21 @@ impl Screen for ScreenLevelEditor {
         }
     }
 
-    fn on_key_pressed(&mut self, game_state: &mut GameState, key: i32) {
-        if key == keys::ESC {
+    fn on_key_pressed(&mut self, game_state: &mut GameState, key: Key) {
+        if key == Key::ESC {
             //TODO use dialog with cancel option
             game_state.open_dialog(Box::new(DialogYesNo::new("Exiting (Save changes?)")));
 
             return;
         }
 
-        if key == keys::F1 {
+        if key == Key::F1 {
             game_state.open_help_page();
 
             return;
         }
 
-        if key == b'r' as i32 {
+        if key == Key::R {
             self.playing_level = if self.playing_level.is_some() {
                 None
             }else {

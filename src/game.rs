@@ -1,4 +1,4 @@
-use console_lib::{keys, Console};
+use console_lib::{Key, Console};
 use std::collections::HashMap;
 use std::error::Error;
 use std::ffi::OsString;
@@ -522,10 +522,10 @@ impl <'a> Game<'a> {
         false
     }
 
-    fn update_key(&mut self, key: i32) {
+    fn update_key(&mut self, key: Key) {
         let screen = self.screens.get_mut(&self.game_state.current_screen_id);
         if self.game_state.is_help {
-            if key == keys::F1 || key == keys::ESC {
+            if key == Key::F1 || key == Key::ESC {
                 self.game_state.close_help_page();
 
                 if let Some(screen) = screen {

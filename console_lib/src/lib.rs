@@ -30,39 +30,6 @@ mod bindings {
     }
 }
 
-pub mod keys {
-    //Keys
-    //Arrow keys
-    pub const LEFT: i32 = 5000;
-    pub const UP: i32 = 5001;
-    pub const RIGHT: i32 = 5002;
-    pub const DOWN: i32 = 5003;
-
-    //F keys
-    pub const F1: i32 = 5004;
-    pub const F2: i32 = 5005;
-    pub const F3: i32 = 5006;
-    pub const F4: i32 = 5007;
-    pub const F5: i32 = 5008;
-    pub const F6: i32 = 5009;
-    pub const F7: i32 = 5010;
-    pub const F8: i32 = 5011;
-    pub const F9: i32 = 5012;
-    pub const F10: i32 = 5013;
-    pub const F11: i32 = 5014;
-    pub const F12: i32 = 5015;
-
-    //Other keys
-    pub const ESC: i32 = 5016;
-    pub const DELETE: i32 = 5017;
-    pub const ENTER: i32 = 5018;
-    pub const TAB: i32 = 5019;
-}
-
-pub fn is_arrow_key(key: i32) -> bool {
-    (keys::LEFT..=keys::DOWN).contains(&key)
-}
-
 pub struct Console<'a> {
     _lock: MutexGuard<'a, ()>
 }
@@ -117,8 +84,10 @@ impl Console<'_> {
         unsafe { bindings::hasInput() != 0 }
     }
 
-    pub fn get_key(&self) -> i32 {
-        unsafe { bindings::getKey() as i32 }
+    pub fn get_key(&self) -> Key {
+        let key = unsafe { bindings::getKey() as i32 };
+
+        Key(key)
     }
 
     /// Returns (x, y)
@@ -171,6 +140,135 @@ impl Drop for Console<'_> {
         }
 
         unsafe { bindings::reset() };
+    }
+}
+
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
+pub struct Key(i32);
+
+impl Key {
+    //Ascii
+    pub const SPACE: Key = Key(b' ' as i32);
+    pub const EXCLAMATION_MARK: Key = Key(b'!' as i32);
+    pub const QUOTATION_MARK: Key = Key(b'"' as i32);
+    pub const NUMBER_SIGN: Key = Key(b'#' as i32);
+    pub const DOLLAR: Key = Key(b'$' as i32);
+    pub const PERCENT_SIGN: Key = Key(b'%' as i32);
+    pub const AMPERSAND: Key = Key(b'&' as i32);
+    pub const APOSTROPHE: Key = Key(b'\'' as i32);
+    pub const LEFT_PARENTHESIS: Key = Key(b'(' as i32);
+    pub const RIGHT_PARENTHESIS: Key = Key(b')' as i32);
+    pub const ASTERISK: Key = Key(b'*' as i32);
+    pub const PLUS: Key = Key(b'+' as i32);
+    pub const COMMA: Key = Key(b',' as i32);
+    pub const MINUS: Key = Key(b'-' as i32);
+    pub const DOT: Key = Key(b'.' as i32);
+    pub const SLASH: Key = Key(b'/' as i32);
+
+    pub const COLON: Key = Key(b':' as i32);
+    pub const SEMICOLON: Key = Key(b';' as i32);
+    pub const LESS_THAN_SIGN: Key = Key(b'<' as i32);
+    pub const EQUALS_SIGN: Key = Key(b'=' as i32);
+    pub const GREATER_THAN_SIGN: Key = Key(b'>' as i32);
+    pub const QUESTION_MARK: Key = Key(b'?' as i32);
+    pub const AT_SIGN: Key = Key(b'@' as i32);
+
+    pub const LEFT_BRACKET: Key = Key(b'[' as i32);
+    pub const BACKSLASH: Key = Key(b'\\' as i32);
+    pub const RIGHT_BRACKET: Key = Key(b']' as i32);
+    pub const CARET: Key = Key(b'^' as i32);
+    pub const UNDERSCORE: Key = Key(b'_' as i32);
+    pub const BACKTICK: Key = Key(b'`' as i32);
+
+    pub const LEFT_CURLY_BRACKET: Key = Key(b'{' as i32);
+    pub const VERTICAL_BAR: Key = Key(b'|' as i32);
+    pub const RIGHT_CURLY_BRACKET: Key = Key(b'}' as i32);
+    pub const TILDE: Key = Key(b'~' as i32);
+
+    pub const DIGIT_0: Key = Key(b'0' as i32);
+    pub const DIGIT_1: Key = Key(b'1' as i32);
+    pub const DIGIT_2: Key = Key(b'2' as i32);
+    pub const DIGIT_3: Key = Key(b'3' as i32);
+    pub const DIGIT_4: Key = Key(b'4' as i32);
+    pub const DIGIT_5: Key = Key(b'5' as i32);
+    pub const DIGIT_6: Key = Key(b'6' as i32);
+    pub const DIGIT_7: Key = Key(b'7' as i32);
+    pub const DIGIT_8: Key = Key(b'8' as i32);
+    pub const DIGIT_9: Key = Key(b'9' as i32);
+
+    pub const A: Key = Key(b'a' as i32);
+    pub const B: Key = Key(b'b' as i32);
+    pub const C: Key = Key(b'c' as i32);
+    pub const D: Key = Key(b'd' as i32);
+    pub const E: Key = Key(b'e' as i32);
+    pub const F: Key = Key(b'f' as i32);
+    pub const G: Key = Key(b'g' as i32);
+    pub const H: Key = Key(b'h' as i32);
+    pub const I: Key = Key(b'i' as i32);
+    pub const J: Key = Key(b'j' as i32);
+    pub const K: Key = Key(b'k' as i32);
+    pub const L: Key = Key(b'l' as i32);
+    pub const M: Key = Key(b'm' as i32);
+    pub const N: Key = Key(b'n' as i32);
+    pub const O: Key = Key(b'o' as i32);
+    pub const P: Key = Key(b'p' as i32);
+    pub const Q: Key = Key(b'q' as i32);
+    pub const R: Key = Key(b'r' as i32);
+    pub const S: Key = Key(b's' as i32);
+    pub const T: Key = Key(b't' as i32);
+    pub const U: Key = Key(b'u' as i32);
+    pub const V: Key = Key(b'v' as i32);
+    pub const W: Key = Key(b'w' as i32);
+    pub const X: Key = Key(b'x' as i32);
+    pub const Y: Key = Key(b'y' as i32);
+    pub const Z: Key = Key(b'z' as i32);
+
+    //Arrow keys
+    pub const LEFT: Key = Key(5000);
+    pub const UP: Key = Key(5001);
+    pub const RIGHT: Key = Key(5002);
+    pub const DOWN: Key = Key(5003);
+
+    //F keys
+    pub const F1: Key = Key(5004);
+    pub const F2: Key = Key(5005);
+    pub const F3: Key = Key(5006);
+    pub const F4: Key = Key(5007);
+    pub const F5: Key = Key(5008);
+    pub const F6: Key = Key(5009);
+    pub const F7: Key = Key(5010);
+    pub const F8: Key = Key(5011);
+    pub const F9: Key = Key(5012);
+    pub const F10: Key = Key(5013);
+    pub const F11: Key = Key(5014);
+    pub const F12: Key = Key(5015);
+
+    //Other keys
+    pub const ESC: Key = Key(5016);
+    pub const DELETE: Key = Key(5017);
+    pub const ENTER: Key = Key(5018);
+    pub const TAB: Key = Key(5019);
+}
+
+impl Key {
+    pub fn is_arrow_key(&self) -> bool {
+        (Key::LEFT..=Key::DOWN).contains(self)
+    }
+    
+    pub fn to_ascii(&self) -> Option<u8> {
+        self.is_ascii().then_some(self.0 as u8)
+    }
+    
+    pub fn is_ascii(&self) -> bool {
+        (0..=127).contains(&self.0)
+    }
+    
+    pub fn is_numeric(&self) -> bool {
+        self.is_ascii() && (self.0 as u8 as char).is_numeric()
+    }
+    
+    pub fn is_alphanumeric(&self) -> bool {
+        self.is_ascii() && (self.0 as u8 as char).is_alphanumeric()
     }
 }
 

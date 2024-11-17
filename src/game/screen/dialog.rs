@@ -1,4 +1,4 @@
-use console_lib::{keys, Color, Console};
+use console_lib::{Key, Color, Console};
 
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum DialogSelection {
@@ -26,7 +26,7 @@ pub trait Dialog {
 
     fn draw(&self, console: &Console, console_width: usize, console_height: usize);
 
-    fn on_key_pressed(&self, console_width: usize, console_height: usize, key: i32) -> Option<DialogSelection>;
+    fn on_key_pressed(&self, console_width: usize, console_height: usize, key: Key) -> Option<DialogSelection>;
     fn on_mouse_pressed(&self, console_width: usize, console_height: usize, column: usize, row: usize) -> Option<DialogSelection>;
 }
 
@@ -82,10 +82,10 @@ impl Dialog for DialogYesNo {
         self.draw_border(console, x_start, y_start, width_with_border, 5);
     }
 
-    fn on_key_pressed(&self, _: usize, _: usize, key: i32) -> Option<DialogSelection> {
-        if key == b'y' as i32 {
+    fn on_key_pressed(&self, _: usize, _: usize, key: Key) -> Option<DialogSelection> {
+        if key == Key::Y {
             return Some(DialogSelection::Yes);
-        }else if key == b'n' as i32 {
+        }else if key == Key::N {
             return Some(DialogSelection::No);
         }
 
@@ -180,8 +180,8 @@ impl Dialog for DialogOk {
         self.draw_border(console, x_start, y_start, width_with_border, 5);
     }
 
-    fn on_key_pressed(&self, _: usize, _: usize, key: i32) -> Option<DialogSelection> {
-        if key == b'o' as i32 || key == keys::ENTER {
+    fn on_key_pressed(&self, _: usize, _: usize, key: Key) -> Option<DialogSelection> {
+        if key == Key::O || key == Key::ENTER {
             return Some(DialogSelection::Ok);
         }
 

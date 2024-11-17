@@ -1,4 +1,4 @@
-use console_lib::{keys, Color, Console};
+use console_lib::{Key, Color, Console};
 
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 enum SectionLayer {
@@ -629,14 +629,14 @@ impl HelpPage {
         console.draw_text(format!("{}", Self::PAGE_COUNT));
     }
 
-    pub fn on_key_pressed(&mut self, key: i32) {
-        if key == keys::UP {
+    pub fn on_key_pressed(&mut self, key: Key) {
+        if key == Key::UP {
             self.page = if self.page == 0 {
                 Self::PAGE_COUNT - 1
             }else {
                 self.page - 1
             };
-        }else if key == keys::DOWN {
+        }else if key == Key::DOWN {
             self.page = if self.page == Self::PAGE_COUNT - 1 {
                 0
             }else {
@@ -653,7 +653,7 @@ impl HelpPage {
         }
 
         if row == height - 1 && column < 8 {
-            self.on_key_pressed(keys::DOWN);
+            self.on_key_pressed(Key::DOWN);
         }
     }
 }
