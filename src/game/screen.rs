@@ -860,7 +860,13 @@ impl Screen for ScreenInGame {
 
             self.time_millis = (diff % 1000) as u32;
             self.time_sec = (diff / 1000 % 60) as u32;
-            self.time_min = (diff / 1000 / 60) as u32;
+            self.time_min = (diff / 1000 / 60 % 60) as u32;
+
+            if self.time_min >= 60 {
+                self.time_millis = 999;
+                self.time_sec = 59;
+                self.time_min = 59;
+            }
         }
     }
 
@@ -1007,7 +1013,7 @@ impl Screen for ScreenInGame {
             //Copy level to last step if change
             if self.player_pos != (x_from, y_from) {
                 self.old_moves = self.moves;
-                self.moves += 1;
+                self.moves = 9999.min(self.moves + 1);
 
                 self.old_player_pos = (x_from, y_from);
                 self.level_now_last_step = level_now_before_move;
