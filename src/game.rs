@@ -340,6 +340,17 @@ impl <'a> Game<'a> {
                 ))));
             }
 
+            if level_pack_id == "secret" {
+                return Err(Box::new(GameError::new(format!("Level pack \"{}\" already exists!", level_pack_id))));
+            }
+
+            for id in level_packs.iter().
+                    map(|level_pack| level_pack.id()) {
+                if id == level_pack_id {
+                    return Err(Box::new(GameError::new(format!("Level pack \"{}\" already exists!", level_pack_id))));
+                }
+            }
+
             level_packs.push(LevelPack::read_from_save_game(level_pack_id, &arg, level_pack_data)?);
         }
 
