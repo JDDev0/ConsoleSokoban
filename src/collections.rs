@@ -56,7 +56,7 @@ impl<T> UndoHistory<T> {
         self.history.push_back(value);
     }
 
-    pub fn current(&mut self) -> &T {
+    pub fn current(&self) -> &T {
         &self.history[self.current_index]
     }
 

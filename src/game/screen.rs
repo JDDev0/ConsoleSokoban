@@ -1796,8 +1796,7 @@ impl Screen for ScreenLevelPackEditor {
 }
 
 pub struct ScreenLevelEditor {
-    level: Option<Level>,
-    level_undo_history: UndoHistory<Level>,
+    level: UndoHistory<Level>,
     is_vertical_input: bool,
     is_reverse_input: bool,
     playing_level: Option<Level>,
@@ -1810,8 +1809,7 @@ impl ScreenLevelEditor {
 
     pub fn new() -> Self {
         Self {
-            level: Default::default(),
-            level_undo_history: UndoHistory::new(Self::UNDO_HISTORY_SIZE, Level::new(1, 1)),
+            level: UndoHistory::new(Self::UNDO_HISTORY_SIZE, Level::new(1, 1)),
             is_vertical_input: Default::default(),
             is_reverse_input: Default::default(),
             playing_level: Default::default(),
@@ -1864,7 +1862,7 @@ impl ScreenLevelEditor {
                 };
 
                 //Set players old position to old level data
-                let mut tile = self.level.as_ref().unwrap().get_tile(x_from, y_from).unwrap().clone();
+                let mut tile = self.level.current().get_tile(x_from, y_from).unwrap().clone();
                 if tile == Tile::Player || tile == Tile::Box || tile == Tile::Key || tile == Tile::LockedDoor {
                     tile = Tile::Empty;
                 }else if tile == Tile::BoxInGoal || tile == Tile::KeyInGoal {
@@ -1877,7 +1875,7 @@ impl ScreenLevelEditor {
                 let tile = level.get_tile(x_to, y_to).unwrap().clone();
                 if matches!(tile, Tile::Empty | Tile::Goal | Tile::Secret) || tile == one_way_door_tile ||
                         matches!(tile, Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if level.move_box_or_key(
-                            self.level.as_ref().unwrap(), &mut has_won, x_from, y_from, x_to, y_to)) {
+                            self.level.current(), &mut has_won, x_from, y_from, x_to, y_to)) {
                     self.player_pos = (x_to, y_to);
                 }
 
@@ -1897,26 +1895,26 @@ impl ScreenLevelEditor {
             Key::LEFT => {
                 if self.cursor_pos.0 > 0 {
                     self.cursor_pos.0 -= 1;
-                }else if let Some(ref level) = self.level {
-                    self.cursor_pos.0 = level.width() - 1;
+                }else {
+                    self.cursor_pos.0 = self.level.current().width() - 1;
                 }
             },
             Key::UP => {
                 if self.cursor_pos.1 > 0 {
                     self.cursor_pos.1 -= 1;
-                }else if let Some(ref level) = self.level {
-                    self.cursor_pos.1 = level.height() - 1;
+                }else {
+                    self.cursor_pos.1 = self.level.current().height() - 1;
                 }
             },
             Key::RIGHT => {
-                if self.level.as_ref().is_some_and(|level| self.cursor_pos.0 < level.width() - 1) {
+                if self.cursor_pos.0 < self.level.current().width() - 1 {
                     self.cursor_pos.0 += 1;
                 }else {
                     self.cursor_pos.0 = 0;
                 }
             },
             Key::DOWN => {
-                if self.level.as_ref().is_some_and(|level| self.cursor_pos.1 < level.height() - 1) {
+                if self.cursor_pos.1 < self.level.current().height() - 1 {
                     self.cursor_pos.1 += 1;
                 }else {
                     self.cursor_pos.1 = 0;
@@ -1925,7 +1923,7 @@ impl ScreenLevelEditor {
 
             Key::DELETE => {
                 if self.is_vertical_input {
-                    if self.level.as_ref().unwrap().width() == 3 {
+                    if self.level.current().width() == 3 {
                         game_state.open_dialog(Box::new(DialogOk::new_error(format!(
                             "Level width limit reached (min: {})",
                             3,
@@ -1936,7 +1934,7 @@ impl ScreenLevelEditor {
 
                     let index = self.cursor_pos.0;
 
-                    let level_orig = self.level.clone().unwrap();
+                    let level_orig = self.level.current().clone();
                     let mut new_level = Level::new(level_orig.width() - 1, level_orig.height());
 
                     if index == new_level.width() {
@@ -1959,10 +1957,9 @@ impl ScreenLevelEditor {
                         }
                     }
 
-                    self.level = Some(new_level);
-                    self.on_level_changed();
+                    self.level.commit_change(new_level);
                 }else {
-                    if self.level.as_ref().unwrap().height() == 3 {
+                    if self.level.current().height() == 3 {
                         game_state.open_dialog(Box::new(DialogOk::new_error(format!(
                             "Level height limit reached (min: {})",
                             3,
@@ -1973,7 +1970,7 @@ impl ScreenLevelEditor {
 
                     let index = self.cursor_pos.1;
 
-                    let level_orig = self.level.clone().unwrap();
+                    let level_orig = self.level.current().clone();
                     let mut new_level = Level::new(level_orig.width(), level_orig.height() - 1);
 
                     if index == new_level.height() {
@@ -1996,8 +1993,7 @@ impl ScreenLevelEditor {
                         }
                     }
 
-                    self.level = Some(new_level);
-                    self.on_level_changed();
+                    self.level.commit_change(new_level);
                 }
             },
 
@@ -2010,7 +2006,7 @@ impl ScreenLevelEditor {
                 let is_copy = key == Key::C;
 
                 if self.is_vertical_input {
-                    if self.level.as_ref().unwrap().height() == Game::LEVEL_MAX_HEIGHT {
+                    if self.level.current().height() == Game::LEVEL_MAX_HEIGHT {
                         game_state.open_dialog(Box::new(DialogOk::new_error(format!(
                             "Level height limit reached (max: {})",
                             Game::LEVEL_MAX_HEIGHT,
@@ -2025,7 +2021,7 @@ impl ScreenLevelEditor {
                     }
                     let index = self.cursor_pos.1;
 
-                    let level_orig = self.level.clone().unwrap();
+                    let level_orig = self.level.current().clone();
                     let mut new_level = Level::new(level_orig.width(), level_orig.height() + 1);
 
                     for i in 0..level_orig.width() {
@@ -2047,10 +2043,9 @@ impl ScreenLevelEditor {
                         new_level.set_tile(i, index, tile);
                     }
 
-                    self.level = Some(new_level);
-                    self.on_level_changed();
+                    self.level.commit_change(new_level);
                 }else {
-                    if self.level.as_ref().unwrap().width() == Game::LEVEL_MAX_WIDTH {
+                    if self.level.current().width() == Game::LEVEL_MAX_WIDTH {
                         game_state.open_dialog(Box::new(DialogOk::new_error(format!(
                             "Level width limit reached (max: {})",
                             Game::LEVEL_MAX_WIDTH,
@@ -2065,7 +2060,7 @@ impl ScreenLevelEditor {
                     }
                     let index = self.cursor_pos.0;
 
-                    let level_orig = self.level.clone().unwrap();
+                    let level_orig = self.level.current().clone();
                     let mut new_level = Level::new(level_orig.width() + 1, level_orig.height());
 
                     for i in 0..level_orig.height() {
@@ -2087,8 +2082,7 @@ impl ScreenLevelEditor {
                         new_level.set_tile(index, i, tile);
                     }
 
-                    self.level = Some(new_level);
-                    self.on_level_changed();
+                    self.level.commit_change(new_level);
                 }
             },
 
@@ -2096,14 +2090,12 @@ impl ScreenLevelEditor {
                 let is_undo = key == Key::Z;
 
                 let level = if is_undo {
-                    self.level_undo_history.undo()
+                    self.level.undo()
                 }else {
-                    self.level_undo_history.redo()
+                    self.level.redo()
                 };
 
                 if let Some(level) = level {
-                    self.level = Some(level.clone());
-
                     if self.cursor_pos.0 >= level.width() {
                         self.cursor_pos.0 = level.width() - 1;
                     }
@@ -2117,12 +2109,13 @@ impl ScreenLevelEditor {
             key if key.is_ascii() => {
                 if let Ok(tile_input) = Tile::from_ascii(key.to_ascii().unwrap()) {
                     if tile_input != Tile::Secret {
-                        let tile = self.level.as_mut().unwrap().get_tile_mut(self.cursor_pos.0, self.cursor_pos.1).unwrap();
+                        let mut level = self.level.current().clone();
+                        let tile = level.get_tile_mut(self.cursor_pos.0, self.cursor_pos.1).unwrap();
 
                         if *tile != tile_input {
                             *tile = tile_input;
 
-                            self.on_level_changed();
+                            self.level.commit_change(level);
                         }
                     }
                 }
@@ -2144,10 +2137,6 @@ impl ScreenLevelEditor {
 
             _ => {},
         }
-    }
-
-    fn on_level_changed(&mut self) {
-        self.level_undo_history.commit_change(self.level.as_ref().unwrap().clone());
     }
 }
 
@@ -2173,14 +2162,12 @@ impl Screen for ScreenLevelEditor {
             console.draw_text(format!("Cursor ({:02}:{:02})", self.cursor_pos.0 + 1, self.cursor_pos.1 + 1));
         }
 
-        if let Some(ref level) = self.level {
-            let x_offset = ((Game::CONSOLE_MIN_WIDTH - level.width()) as f64 * 0.5) as usize;
-            let y_offset = 1;
+        let x_offset = ((Game::CONSOLE_MIN_WIDTH - self.level.current().width()) as f64 * 0.5) as usize;
+        let y_offset = 1;
 
-            self.playing_level.as_ref().map_or(level, |level| level).
-                    draw(console, x_offset, y_offset, game_state.is_player_background(),
-                         self.playing_level.as_ref().map_or(Some(self.cursor_pos), |_| None));
-        }
+        self.playing_level.as_ref().map_or(self.level.current(), |level| level).
+                draw(console, x_offset, y_offset, game_state.is_player_background(),
+                     self.playing_level.as_ref().map_or(Some(self.cursor_pos), |_| None));
     }
 
     fn on_key_pressed(&mut self, game_state: &mut GameState, key: Key) {
@@ -2201,7 +2188,7 @@ impl Screen for ScreenLevelEditor {
             self.playing_level = if self.playing_level.is_some() {
                 None
             }else {
-                let player_tile_count = self.level.as_ref().unwrap().tiles().iter().filter(|tile| **tile == Tile::Player).count();
+                let player_tile_count = self.level.current().tiles().iter().filter(|tile| **tile == Tile::Player).count();
                 if player_tile_count == 0 {
                     game_state.open_dialog(Box::new(DialogOk::new_error("Level does not contain a player tile!")));
 
@@ -2213,9 +2200,9 @@ impl Screen for ScreenLevelEditor {
                 }
 
                 'outer:
-                for i in 0..self.level.as_ref().unwrap().width() {
-                    for j in 0..self.level.as_ref().unwrap().height() {
-                        if let Some(tile) = self.level.as_ref().unwrap().get_tile(i, j) {
+                for i in 0..self.level.current().width() {
+                    for j in 0..self.level.current().height() {
+                        if let Some(tile) = self.level.current().get_tile(i, j) {
                             if *tile == Tile::Player {
                                 self.player_pos = (i, j);
 
@@ -2225,7 +2212,7 @@ impl Screen for ScreenLevelEditor {
                     }
                 }
 
-                self.level.clone()
+                Some(self.level.current().clone())
             };
 
             return;
@@ -2243,41 +2230,37 @@ impl Screen for ScreenLevelEditor {
             return;
         }
 
-        if let Some(ref level) = self.level {
-            let x_offset = ((Game::CONSOLE_MIN_WIDTH - level.width()) as f64 * 0.5) as usize;
-            let y_offset = 1;
+        let x_offset = ((Game::CONSOLE_MIN_WIDTH - self.level.current().width()) as f64 * 0.5) as usize;
+        let y_offset = 1;
 
-            if column < x_offset {
-                return;
-            }
-
-            let x = column - x_offset;
-            if x >= level.width() {
-                return;
-            }
-
-            let y = row - y_offset;
-            if y >= level.height() {
-                return;
-            }
-
-            self.cursor_pos = (x, y);
+        if column < x_offset {
+            return;
         }
+
+        let x = column - x_offset;
+        if x >= self.level.current().width() {
+            return;
+        }
+
+        let y = row - y_offset;
+        if y >= self.level.current().height() {
+            return;
+        }
+
+        self.cursor_pos = (x, y);
     }
 
     fn on_dialog_selection(&mut self, game_state: &mut GameState, selection: DialogSelection) {
         if selection == DialogSelection::Yes {
-            *game_state.editor_state.get_current_level_mut().unwrap() = self.level.take().unwrap();
+            *game_state.editor_state.get_current_level_mut().unwrap() = self.level.current().clone();
             if let Err(err) = game_state.editor_state.get_current_level_pack().unwrap().save_editor_level_pack() {
                 game_state.open_dialog(Box::new(DialogOk::new_error(format!("Cannot save: {}", err))));
             }
 
-            self.level = None;
-            self.level_undo_history.clear();
+            self.level.clear();
             game_state.set_screen(ScreenId::LevelPackEditor);
         }else if selection == DialogSelection::No {
-            self.level = None;
-            self.level_undo_history.clear();
+            self.level.clear();
             game_state.set_screen(ScreenId::LevelPackEditor);
         }
     }
@@ -2289,9 +2272,6 @@ impl Screen for ScreenLevelEditor {
         self.cursor_pos = (0, 0);
         self.player_pos = (0, 0);
 
-        let level = game_state.editor_state.get_current_level().unwrap().clone();
-        self.level_undo_history.clear_with_new_initial(level.clone());
-
-        self.level = Some(level);
+        self.level.clear_with_new_initial(game_state.editor_state.get_current_level().unwrap().clone());
     }
 }
