@@ -256,11 +256,14 @@ impl HelpPage {
                 console.draw_text("r");
                 console.reset_color();
                 console.draw_text(": Reset level\n");
-                console.set_underline(false);
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("z");
                 console.reset_color();
-                console.draw_text(": One step back/forward");
+                console.draw_text(" / ");
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("y");
+                console.reset_color();
+                console.draw_text(": Undo / Redo");
             },
             3 => {
                 console.set_color(Color::Green, Color::Default);

@@ -1,6 +1,5 @@
 use console_lib::{Key, Color, Console};
 use std::cmp::Ordering;
-use std::mem;
 use std::str::FromStr;
 use std::time::SystemTime;
 use dialog::DialogYesNo;
@@ -562,14 +561,7 @@ pub struct ScreenInGame {
     time_sec: u32,
     time_min: u32,
 
-    moves: u32,
-    old_moves: u32,
-
-    player_pos: (usize, usize),
-    old_player_pos: (usize, usize),
-
-    level_now: Option<Level>,
-    level_now_last_step: Option<Level>,
+    level: Option<UndoHistory<(Level, (usize, usize))>>,
 
     continue_flag: bool,
     secret_found_flag: bool,
@@ -577,6 +569,8 @@ pub struct ScreenInGame {
 }
 
 impl ScreenInGame {
+    pub const UNDO_HISTORY_SIZE_PLAYING: usize = 10000;
+
     pub fn new() -> Self {
         Self {
             time_start_in_menu: Default::default(),
@@ -585,14 +579,7 @@ impl ScreenInGame {
             time_sec: Default::default(),
             time_min: Default::default(),
 
-            moves: Default::default(),
-            old_moves: Default::default(),
-
-            player_pos: Default::default(),
-            old_player_pos: Default::default(),
-
-            level_now: Default::default(),
-            level_now_last_step: Default::default(),
+            level: Default::default(),
 
             continue_flag: Default::default(),
             secret_found_flag: Default::default(),
@@ -607,28 +594,27 @@ impl ScreenInGame {
         self.time_sec = 0;
         self.time_min = 0;
 
-        self.old_moves = 0;
-        self.moves = 0;
-
-        self.level_now = Some(level.clone());
-        self.level_now_last_step = Some(level.clone());
+        let level = level.clone();
 
         self.continue_flag = false;
         self.game_over_flag = false;
+
+        let mut player_pos = None;
 
         'outer:
         for i in 0..level.width() {
             for j in 0..level.height() {
                 if let Some(tile) = level.get_tile(i, j) {
                     if *tile == Tile::Player {
-                        self.player_pos = (i, j);
-                        self.old_player_pos = (i, j);
+                        player_pos = Some((i, j));
 
                         break 'outer;
                     }
                 }
             }
         }
+
+        self.level = Some(UndoHistory::new(Self::UNDO_HISTORY_SIZE_PLAYING, (level, player_pos.unwrap())));
     }
 
     fn draw_tutorial_level_text(&self, game_state: &GameState, console: &Console) {
@@ -811,7 +797,7 @@ impl Screen for ScreenInGame {
         console.draw_text(utils::number_to_string_leading_ascii(2, game_state.current_level_index as u32 + 1, true));
 
         console.set_cursor_pos(((Game::CONSOLE_MIN_WIDTH - 11) as f64 * 0.75) as usize, 0);
-        console.draw_text(format!("Moves: {:04}", self.moves));
+        console.draw_text(format!("Moves: {:04}", self.level.as_ref().unwrap().current_index()));
 
         console.set_cursor_pos(Game::CONSOLE_MIN_WIDTH - 15, 0);
         console.draw_text(format!(
@@ -836,7 +822,7 @@ impl Screen for ScreenInGame {
             }
         }
 
-        if let Some(ref level) = self.level_now {
+        if let Some(level) = self.level.as_ref().map(|level| &level.current().0) {
             let x_offset = ((Game::CONSOLE_MIN_WIDTH - level.width()) as f64 * 0.5) as usize;
             let y_offset = 1;
 
@@ -923,15 +909,10 @@ impl Screen for ScreenInGame {
             return;
         }
 
-        //One step back
         if key == Key::Z {
-            mem::swap(&mut self.level_now, &mut self.level_now_last_step);
-
-            //Reset move count
-            mem::swap(&mut self.moves, &mut self.old_moves);
-
-            //Reset player pos
-            mem::swap(&mut self.player_pos, &mut self.old_player_pos);
+            self.level.as_mut().unwrap().undo();
+        }else if key == Key::Y {
+            self.level.as_mut().unwrap().redo();
         }
 
         //Reset
@@ -940,12 +921,12 @@ impl Screen for ScreenInGame {
         }
 
         if key.is_arrow_key() {
-            let level_now_before_move = self.level_now.clone();
+            let (mut level, mut player_pos) = self.level.as_ref().unwrap().current().clone();
 
-            let width = self.level_now.as_ref().unwrap().width();
-            let height = self.level_now.as_ref().unwrap().height();
+            let width = level.width();
+            let height = level.height();
 
-            let (x_from, y_from) = self.player_pos;
+            let (x_from, y_from) = player_pos;
 
             let x_to = match key {
                 Key::LEFT => if x_from == 0 {
@@ -990,33 +971,28 @@ impl Screen for ScreenInGame {
                 tile = Tile::Goal;
             }
 
-            self.level_now.as_mut().unwrap().set_tile(x_from, y_from, tile);
+            level.set_tile(x_from, y_from, tile);
 
             self.time_start.get_or_insert_with(SystemTime::now);
 
             let mut has_won = false;
-            let tile = self.level_now.as_ref().unwrap().get_tile(x_to, y_to).unwrap().clone();
+            let tile = level.get_tile(x_to, y_to).unwrap().clone();
             if matches!(tile, Tile::Empty | Tile::Goal | Tile::Secret) || tile == one_way_door_tile ||
-                    matches!(tile, Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if self.level_now.as_mut().unwrap().move_box_or_key(
+                    matches!(tile, Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if level.move_box_or_key(
                         level_pack.levels().get(current_level_index).unwrap().level(), &mut has_won, x_from, y_from, x_to, y_to)) {
                 if tile == Tile::Secret {
                     self.game_over_flag = true;
                     self.secret_found_flag = true;
                 }
 
-                self.player_pos = (x_to, y_to);
+                player_pos = (x_to, y_to);
             }
 
             //Set player to new position
-            self.level_now.as_mut().unwrap().set_tile(self.player_pos.0, self.player_pos.1, Tile::Player);
+            level.set_tile(player_pos.0, player_pos.1, Tile::Player);
 
-            //Copy level to last step if change
-            if self.player_pos != (x_from, y_from) {
-                self.old_moves = self.moves;
-                self.moves = 9999.min(self.moves + 1);
-
-                self.old_player_pos = (x_from, y_from);
-                self.level_now_last_step = level_now_before_move;
+            if player_pos != (x_from, y_from) {
+                self.level.as_mut().unwrap().commit_change((level, player_pos));
             }
 
             if has_won {
@@ -1024,7 +1000,7 @@ impl Screen for ScreenInGame {
 
                 //Update best scores
                 let time = self.time_millis as u64 + 1000 * self.time_sec as u64 + 60000 * self.time_min as u64;
-                let moves = self.moves;
+                let moves = self.level.as_ref().unwrap().current_index() as u32;
 
                 level_pack.update_stats(current_level_index, time, moves);
 
@@ -1899,7 +1875,6 @@ impl ScreenLevelEditor {
                 //Set player to new position
                 level.set_tile(player_pos.0, player_pos.1, Tile::Player);
 
-                //Copy level to last step if change
                 if player_pos != (x_from, y_from) {
                     level_history.commit_change((level, player_pos));
                 }
