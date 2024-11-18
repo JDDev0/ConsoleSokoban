@@ -489,55 +489,67 @@ impl HelpPage {
 
                 console.set_cursor_pos(0, 4);
                 console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("z");
+                console.reset_color();
+                console.draw_text(": Undo");
+
+                console.set_cursor_pos(0, 5);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("y");
+                console.reset_color();
+                console.draw_text(": Redo");
+
+                console.set_cursor_pos(0, 6);
+                console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("r");
                 console.reset_color();
                 console.draw_text(": Goes into the editing mode");
 
                 console.set_underline(true);
 
-                console.set_cursor_pos(0, 6);
+                console.set_cursor_pos(0, 8);
                 console.set_color(Color::Cyan, Color::Default);
                 console.draw_text("4.1.4 Level editor (Editing mode)\n");
 
                 console.set_underline(false);
 
-                console.set_cursor_pos(0, 7);
+                console.set_cursor_pos(0, 9);
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("Arrow keys");
                 console.reset_color();
                 console.draw_text(": Moves cursor position\n");
 
-                console.set_cursor_pos(0, 8);
+                console.set_cursor_pos(0, 10);
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("w a s d");
                 console.reset_color();
                 console.draw_text(": Sets the direction of the cursor");
 
-                console.set_cursor_pos(0, 9);
+                console.set_cursor_pos(0, 11);
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("i");
                 console.reset_color();
                 console.draw_text(": Inserts a row or column in the cursor direction");
 
-                console.set_cursor_pos(0, 10);
+                console.set_cursor_pos(0, 12);
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("c");
                 console.reset_color();
                 console.draw_text(": Copies the current row or column in the cursor direction");
 
-                console.set_cursor_pos(0, 11);
+                console.set_cursor_pos(0, 13);
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("z");
                 console.reset_color();
                 console.draw_text(": Undo");
 
-                console.set_cursor_pos(0, 12);
+                console.set_cursor_pos(0, 14);
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("y");
                 console.reset_color();
                 console.draw_text(": Redo");
 
-                console.set_cursor_pos(0, 13);
+                console.set_cursor_pos(0, 15);
                 console.set_color(Color::LightRed, Color::Default);
                 console.draw_text("r");
                 console.reset_color();

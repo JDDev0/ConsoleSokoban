@@ -1799,13 +1799,13 @@ pub struct ScreenLevelEditor {
     level: UndoHistory<Level>,
     is_vertical_input: bool,
     is_reverse_input: bool,
-    playing_level: Option<Level>,
+    playing_level: Option<UndoHistory<(Level, (usize, usize))>>,
     cursor_pos: (usize, usize),
-    player_pos: (usize, usize),
 }
 
 impl ScreenLevelEditor {
     pub const UNDO_HISTORY_SIZE: usize = 256;
+    pub const UNDO_HISTORY_SIZE_PLAYING: usize = 10000;
 
     pub fn new() -> Self {
         Self {
@@ -1814,17 +1814,28 @@ impl ScreenLevelEditor {
             is_reverse_input: Default::default(),
             playing_level: Default::default(),
             cursor_pos: Default::default(),
-            player_pos: Default::default(),
         }
     }
 
     fn on_key_pressed_playing(&mut self, key: Key) {
-        if let Some(level) = self.playing_level.as_mut() {
+        if let Some(level_history) = self.playing_level.as_mut() {
+            if matches!(key, Key::Z | Key::Y) {
+                let is_undo = key == Key::Z;
+
+                if is_undo {
+                    level_history.undo()
+                }else {
+                    level_history.redo()
+                };
+            }
+
             if key.is_arrow_key() {
+                let (mut level, mut player_pos) = level_history.current().clone();
+
                 let width = level.width();
                 let height = level.height();
 
-                let (x_from, y_from) = self.player_pos;
+                let (x_from, y_from) = player_pos;
 
                 let x_to = match key {
                     Key::LEFT => if x_from == 0 {
@@ -1876,14 +1887,16 @@ impl ScreenLevelEditor {
                 if matches!(tile, Tile::Empty | Tile::Goal | Tile::Secret) || tile == one_way_door_tile ||
                         matches!(tile, Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if level.move_box_or_key(
                             self.level.current(), &mut has_won, x_from, y_from, x_to, y_to)) {
-                    self.player_pos = (x_to, y_to);
+                    player_pos = (x_to, y_to);
                 }
 
                 //Set player to new position
-                level.set_tile(self.player_pos.0, self.player_pos.1, Tile::Player);
+                level.set_tile(player_pos.0, player_pos.1, Tile::Player);
 
                 //Copy level to last step if change
-                if self.player_pos != (x_from, y_from) {
+                if player_pos != (x_from, y_from) {
+                    level_history.commit_change((level, player_pos));
+
                     //TODO moves += 1
                 }
             }
@@ -2165,7 +2178,7 @@ impl Screen for ScreenLevelEditor {
         let x_offset = ((Game::CONSOLE_MIN_WIDTH - self.level.current().width()) as f64 * 0.5) as usize;
         let y_offset = 1;
 
-        self.playing_level.as_ref().map_or(self.level.current(), |level| level).
+        self.playing_level.as_ref().map_or(self.level.current(), |level| &level.current().0).
                 draw(console, x_offset, y_offset, game_state.is_player_background(),
                      self.playing_level.as_ref().map_or(Some(self.cursor_pos), |_| None));
     }
@@ -2199,12 +2212,14 @@ impl Screen for ScreenLevelEditor {
                     return;
                 }
 
+                let mut player_pos = None;
+
                 'outer:
                 for i in 0..self.level.current().width() {
                     for j in 0..self.level.current().height() {
                         if let Some(tile) = self.level.current().get_tile(i, j) {
                             if *tile == Tile::Player {
-                                self.player_pos = (i, j);
+                                player_pos = Some((i, j));
 
                                 break 'outer;
                             }
@@ -2212,7 +2227,7 @@ impl Screen for ScreenLevelEditor {
                     }
                 }
 
-                Some(self.level.current().clone())
+                Some(UndoHistory::new(Self::UNDO_HISTORY_SIZE_PLAYING, (self.level.current().clone(), player_pos.unwrap())))
             };
 
             return;
@@ -2270,7 +2285,6 @@ impl Screen for ScreenLevelEditor {
         self.is_reverse_input = false;
         self.playing_level = None;
         self.cursor_pos = (0, 0);
-        self.player_pos = (0, 0);
 
         self.level.clear_with_new_initial(game_state.editor_state.get_current_level().unwrap().clone());
     }
