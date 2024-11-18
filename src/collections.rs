@@ -60,6 +60,10 @@ impl<T> UndoHistory<T> {
         &self.history[self.current_index]
     }
 
+    pub fn current_index(&self) -> usize {
+        self.current_index
+    }
+
     pub fn clear(&mut self) {
         //Last element of history is current value and should be the new initial value
         self.history.swap_remove_back(0);

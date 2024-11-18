@@ -1896,8 +1896,6 @@ impl ScreenLevelEditor {
                 //Copy level to last step if change
                 if player_pos != (x_from, y_from) {
                     level_history.commit_change((level, player_pos));
-
-                    //TODO moves += 1
                 }
             }
         }
@@ -2156,10 +2154,11 @@ impl ScreenLevelEditor {
 impl Screen for ScreenLevelEditor {
     fn draw(&self, game_state: &GameState, console: &Console) {
         console.reset_color();
-        if self.playing_level.is_some() {
+        if let Some(level_history) = &self.playing_level {
             console.draw_text("Playing");
 
-            //TODO (Moves, time, ...)
+            console.set_cursor_pos(((Game::CONSOLE_MIN_WIDTH - 11) as f64 * 0.75) as usize, 0);
+            console.draw_text(format!("Moves: {:04}", level_history.current_index()));
         }else {
             console.draw_text(format!(
                 "Editing ({})",
