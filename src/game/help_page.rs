@@ -131,7 +131,7 @@ pub struct HelpPage {
 }
 
 impl HelpPage {
-    const PAGE_COUNT: u32 = 9;
+    const PAGE_COUNT: u32 = 10;
 
     pub fn new() -> Self {
         let mut table_of_contents = TableOfContents::new();
@@ -155,6 +155,7 @@ impl HelpPage {
         table_of_contents.add_sub_sub_section("Level editor (Playing mode)", 7);
         table_of_contents.add_sub_sub_section("Level editor (Editing mode)", 7);
         table_of_contents.add_sub_sub_section("Level editor (Editing mode - Tiles)", 8);
+        table_of_contents.add_sub_sub_section("Level editor (Editing mode - Decoration Tiles)", 9);
 
         Self {
             table_of_contents,
@@ -383,7 +384,7 @@ impl HelpPage {
                 console.set_cursor_pos(1, 6);
                 console.draw_text(
                     ": Empty\n       : One way doors\n : Wall\n : Player\n   : Box\n \
-                    : Goal\n   : Key\n : Locked Door"
+                    : Goal\n   : Key\n : Locked Door\n : Decoration"
                 );
 
                 console.set_color(Color::LightBlue, Color::Default);
@@ -413,6 +414,9 @@ impl HelpPage {
                 console.set_color(Color::LightRed, Color::Default);
                 console.set_cursor_pos(0, 13);
                 console.draw_text("=");
+                console.set_color(Color::LightBlue, Color::Default);
+                console.set_cursor_pos(0, 14);
+                console.draw_text(" ");
             },
             6 => {
                 console.set_color(Color::Blue, Color::Default);
@@ -626,6 +630,22 @@ impl HelpPage {
                 console.draw_text("x");
                 console.reset_color();
                 console.draw_text(": Inserts a goal tile");
+            },
+            9 => {
+                console.set_color(Color::Cyan, Color::Default);
+                console.draw_text("4.1.6 Level editor (Editing mode - Decoration Tiles)\n");
+
+                console.set_underline(false);
+
+                console.set_cursor_pos(0, 3);
+                console.reset_color();
+                console.draw_text("Decoration tiles act like wall tiles.");
+
+                console.set_cursor_pos(0, 5);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("b");
+                console.reset_color();
+                console.draw_text(": Inserts a blank decoration tile");
             },
             _ => {},
         }

@@ -27,6 +27,8 @@ pub enum Tile {
     BoxInGoal,
     Goal,
 
+    DecorationBlank,
+
     Secret,
 }
 
@@ -51,6 +53,8 @@ impl Tile {
             b'@' => Ok(Tile::Box),
             b'+' => Ok(Tile::BoxInGoal),
             b'x' | b'X' => Ok(Tile::Goal),
+
+            b'b' | b'B' => Ok(Tile::DecorationBlank),
 
             b's' | b'S' => Ok(Tile::Secret),
 
@@ -78,6 +82,8 @@ impl Tile {
             Tile::Box => b'@',
             Tile::BoxInGoal => b'+',
             Tile::Goal => b'x',
+            
+            Tile::DecorationBlank => b'b',
 
             Tile::Secret => b's',
         }
@@ -140,6 +146,10 @@ impl Tile {
             Tile::Goal => {
                 console.set_color_invertible(Color::LightRed, Color::Default, inverted);
                 console.draw_text("x");
+            },
+            Tile::DecorationBlank => {
+                console.set_color_invertible(Color::LightBlue, Color::Default, inverted);
+                console.draw_text(" ");
             },
             Tile::Secret => {
                 console.set_color_invertible(Color::LightBlue, Color::Default, inverted);
