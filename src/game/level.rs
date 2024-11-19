@@ -82,7 +82,7 @@ impl Tile {
             Tile::Box => b'@',
             Tile::BoxInGoal => b'+',
             Tile::Goal => b'x',
-            
+
             Tile::DecorationBlank => b'b',
 
             Tile::Secret => b's',
@@ -390,27 +390,6 @@ impl LevelWithStats {
 
     pub fn best_moves(&self) -> Option<u32> {
         self.best_moves
-    }
-
-    pub fn stats(&self) -> (Option<u64>, Option<u32>) {
-        (self.best_time, self.best_moves)
-    }
-
-    pub fn set_level(&mut self, level: Level) {
-        self.level = level;
-    }
-
-    pub fn set_best_time(&mut self, best_time: Option<u64>) {
-        self.best_time = best_time;
-    }
-
-    pub fn set_best_moves(&mut self, best_moves: Option<u32>) {
-        self.best_moves = best_moves;
-    }
-
-    pub fn set_stats(&mut self, best_time: Option<u64>, best_moves: Option<u32>) {
-        self.best_time = best_time;
-        self.best_moves = best_moves;
     }
 }
 
