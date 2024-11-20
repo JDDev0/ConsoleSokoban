@@ -27,6 +27,9 @@ pub enum Tile {
     BoxInGoal,
     Goal,
 
+    Hole,
+    BoxInHole,
+
     DecorationBlank,
 
     Secret,
@@ -53,6 +56,9 @@ impl Tile {
             b'@' => Ok(Tile::Box),
             b'+' => Ok(Tile::BoxInGoal),
             b'x' | b'X' => Ok(Tile::Goal),
+
+            b'o' | b'O' => Ok(Tile::Hole),
+            b'.' => Ok(Tile::BoxInHole),
 
             b'b' | b'B' => Ok(Tile::DecorationBlank),
 
@@ -82,6 +88,9 @@ impl Tile {
             Tile::Box => b'@',
             Tile::BoxInGoal => b'+',
             Tile::Goal => b'x',
+
+            Tile::Hole => b'o',
+            Tile::BoxInHole => b'.',
 
             Tile::DecorationBlank => b'b',
 
@@ -146,6 +155,14 @@ impl Tile {
             Tile::Goal => {
                 console.set_color_invertible(Color::LightRed, Color::Default, inverted);
                 console.draw_text("x");
+            },
+            Tile::Hole => {
+                console.set_color_invertible(Color::LightBlue, Color::Default, inverted);
+                console.draw_text("O");
+            },
+            Tile::BoxInHole => {
+                console.set_color_invertible(Color::Default, Color::LightBlue, inverted);
+                console.draw_text("@");
             },
             Tile::DecorationBlank => {
                 console.set_color_invertible(Color::LightBlue, Color::Default, inverted);
@@ -228,7 +245,8 @@ impl Level {
         let tile_from_new_value;
         let tile_to_new_value;
 
-        if *tile_to == Tile::Empty || *tile_to == Tile::Goal || (!is_box && *tile_to == Tile::LockedDoor) {
+        if *tile_to == Tile::Empty ||*tile_to == Tile::Goal ||  *tile_to == Tile::BoxInHole ||
+                *tile_to == Tile::Hole || (!is_box && *tile_to == Tile::LockedDoor) {
             if is_box && *tile_to == Tile::Goal {
                 tile_to_new_value = Tile::BoxInGoal;
 
@@ -257,6 +275,13 @@ impl Level {
                 }
             }else if !is_box && *tile_to == Tile::Goal {
                 tile_to_new_value = Tile::KeyInGoal;
+            }else if *tile_to == Tile::Hole {
+                if is_box {
+                    tile_to_new_value = Tile::BoxInHole;
+                }else {
+                    //Key will be destroyed, only boxes can fill holes
+                    tile_to_new_value = Tile::Hole;
+                }
             }else if is_box {
                 tile_to_new_value = Tile::Box;
             }else if *tile_to == Tile::LockedDoor {
@@ -268,6 +293,8 @@ impl Level {
 
             if *tile_from == Tile::Box || *tile_from == Tile::Key {
                 tile_from_new_value = Tile::Empty;
+            }else if *tile_from == Tile::BoxInHole {
+                tile_from_new_value = Tile::BoxInHole;
             }else {
                 tile_from_new_value = Tile::Goal;
             }

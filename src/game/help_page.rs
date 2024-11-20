@@ -386,8 +386,8 @@ impl HelpPage {
                 console.reset_color();
                 console.set_cursor_pos(1, 6);
                 console.draw_text(
-                    ": Empty\n       : One way doors\n : Wall\n : Player\n   : Box\n \
-                    : Goal\n   : Key\n : Locked Door\n : Decoration"
+                    ": Empty\n       : One way doors\n : Wall\n : Player\n     : Box\n \
+                    : Goal\n : Hole\n   : Key\n : Locked Door\n : Decoration"
                 );
 
                 console.set_color(Color::LightBlue, Color::Default);
@@ -405,20 +405,26 @@ impl HelpPage {
                 console.set_color(Color::Pink, Color::Default);
                 console.set_cursor_pos(2, 10);
                 console.draw_text("@");
+                console.set_color(Color::Default, Color::LightBlue);
+                console.set_cursor_pos(4, 10);
+                console.draw_text("@");
                 console.set_color(Color::LightRed, Color::Default);
                 console.set_cursor_pos(0, 11);
                 console.draw_text("x");
-                console.set_color(Color::LightCyan, Color::Default);
+                console.set_color(Color::LightBlue, Color::Default);
                 console.set_cursor_pos(0, 12);
+                console.draw_text("O");
+                console.set_color(Color::LightCyan, Color::Default);
+                console.set_cursor_pos(0, 13);
                 console.draw_text("*");
                 console.set_color(Color::Pink, Color::Default);
-                console.set_cursor_pos(2, 12);
+                console.set_cursor_pos(2, 13);
                 console.draw_text("*");
                 console.set_color(Color::LightRed, Color::Default);
-                console.set_cursor_pos(0, 13);
+                console.set_cursor_pos(0, 14);
                 console.draw_text("=");
                 console.set_color(Color::LightBlue, Color::Default);
-                console.set_cursor_pos(0, 14);
+                console.set_cursor_pos(0, 15);
                 console.draw_text(" ");
             },
             6 => {
@@ -633,6 +639,18 @@ impl HelpPage {
                 console.draw_text("x");
                 console.reset_color();
                 console.draw_text(": Inserts a goal tile");
+
+                console.set_cursor_pos(0, 14);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text("o");
+                console.reset_color();
+                console.draw_text(": Inserts a hole tile");
+
+                console.set_cursor_pos(0, 15);
+                console.set_color(Color::LightRed, Color::Default);
+                console.draw_text(".");
+                console.reset_color();
+                console.draw_text(": Inserts a box in hole tile");
             },
             9 => {
                 console.set_color(Color::Cyan, Color::Default);

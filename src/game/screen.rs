@@ -781,6 +781,58 @@ impl ScreenInGame {
                     console.reset_color();
                     console.draw_text(")");
                 },
+                8 => {
+                    console.set_cursor_pos(23, 8);
+                    console.draw_text("Holes (");
+
+                    console.set_color(Color::LightBlue, Color::Default);
+                    console.draw_text("O");
+
+                    console.reset_color();
+                    console.draw_text(") cannot be crossed");
+                },
+                9 => {
+                    console.set_cursor_pos(21, 8);
+                    console.draw_text("Filled holes (");
+
+                    console.set_color(Color::Default, Color::LightBlue);
+                    console.draw_text("@");
+
+                    console.reset_color();
+                    console.draw_text(") can be crossed");
+                },
+                10 => {
+                    console.set_cursor_pos(23, 8);
+                    console.draw_text("Boxes (");
+
+                    console.set_color(Color::LightCyan, Color::Default);
+                    console.draw_text("@");
+
+                    console.reset_color();
+                    console.draw_text(") can fill holes (");
+
+                    console.set_color(Color::LightBlue, Color::Default);
+                    console.draw_text("O");
+
+                    console.reset_color();
+                    console.draw_text(")");
+                },
+                11 => {
+                    console.set_cursor_pos(13, 8);
+                    console.draw_text("Keys (");
+
+                    console.set_color(Color::LightCyan, Color::Default);
+                    console.draw_text("*");
+
+                    console.reset_color();
+                    console.draw_text(") cannot fill holes (");
+
+                    console.set_color(Color::LightBlue, Color::Default);
+                    console.draw_text("O");
+
+                    console.reset_color();
+                    console.draw_text(") and will be lost");
+                },
                 _ => {},
             }
         }
@@ -969,6 +1021,8 @@ impl Screen for ScreenInGame {
                 tile = Tile::Empty;
             }else if tile == Tile::BoxInGoal || tile == Tile::KeyInGoal {
                 tile = Tile::Goal;
+            }else if tile == Tile::Hole || tile == Tile::BoxInHole {
+                tile = Tile::BoxInHole;
             }
 
             level.set_tile(x_from, y_from, tile);
@@ -977,7 +1031,7 @@ impl Screen for ScreenInGame {
 
             let mut has_won = false;
             let tile = level.get_tile(x_to, y_to).unwrap().clone();
-            if matches!(tile, Tile::Empty | Tile::Goal | Tile::Secret) || tile == one_way_door_tile ||
+            if matches!(tile, Tile::Empty | Tile::Goal | Tile::Secret | Tile::BoxInHole) || tile == one_way_door_tile ||
                     matches!(tile, Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if level.move_box_or_key(
                         level_pack.levels().get(current_level_index).unwrap().level(), &mut has_won, x_from, y_from, x_to, y_to)) {
                 if tile == Tile::Secret {
@@ -1860,13 +1914,15 @@ impl ScreenLevelEditor {
                     tile = Tile::Empty;
                 }else if tile == Tile::BoxInGoal || tile == Tile::KeyInGoal {
                     tile = Tile::Goal;
+                }else if tile == Tile::Hole || tile == Tile::BoxInHole {
+                    tile = Tile::BoxInHole;
                 }
 
                 level.set_tile(x_from, y_from, tile);
 
                 let mut has_won = false;
                 let tile = level.get_tile(x_to, y_to).unwrap().clone();
-                if matches!(tile, Tile::Empty | Tile::Goal | Tile::Secret) || tile == one_way_door_tile ||
+                if matches!(tile, Tile::Empty | Tile::Goal | Tile::Secret | Tile::BoxInHole) || tile == one_way_door_tile ||
                         matches!(tile, Tile::Box | Tile::BoxInGoal | Tile::Key | Tile::KeyInGoal if level.move_box_or_key(
                             self.level.current(), &mut has_won, x_from, y_from, x_to, y_to)) {
                     player_pos = (x_to, y_to);

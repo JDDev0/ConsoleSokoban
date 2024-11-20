@@ -1,4 +1,4 @@
-Levels: 8
+Levels: 13
 
 w: 10, h: 3
 ##########
@@ -102,3 +102,37 @@ bbbbbbb-bbbbbbbbbbbb-@*@-bbbbb-bbbbb-bbbbbbbbbbbbbbbbbbbbbbbbbbbbb-bbbbbbb
 #xxx#bb-bbbbbbbbbbbbb#############bb-bbbbbbb############bbbbbbbbbbbbbbbbbb
 #####bb-bbbbbbbbbbbbbbbbbbbbbbbbbbbb-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 bbbbbbb------------------------------bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+w: 9, h: 4
+#########
+###---###
+#P--o-@x#
+#########
+
+w: 10, h: 3
+##########
+#P-@-.--x#
+##########
+
+w: 11, h: 3
+###########
+#P-@-o-@-x#
+###########
+
+w: 9, h: 4
+#########
+###---###
+#P-*o-@x#
+#########
+
+w: 7, h: 10
+#######
+#P-####
+#-----#
+#o#@#-#
+#-#---#
+#-#@#v#
+#+#---#
+#o#@#v#
+#x#---#
+#######
