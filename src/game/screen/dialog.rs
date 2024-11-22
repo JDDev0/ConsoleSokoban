@@ -5,6 +5,7 @@ pub enum DialogSelection {
     No,
     Yes,
     Ok,
+    Cancel,
 }
 
 #[allow(unused_variables)]
@@ -201,6 +202,99 @@ impl Dialog for DialogOk {
 
         if row == y_start + 4 && (x_start + whitespace_count_half + 1..x_start + whitespace_count_half + 5).contains(&column) {
             return Some(DialogSelection::Ok);
+        }
+
+        None
+    }
+}
+
+pub struct DialogYesCancelNo {
+    message: String
+}
+
+impl DialogYesCancelNo {
+    pub fn new(message: impl Into<String>) -> Self {
+        Self { message: message.into() }
+    }
+}
+
+impl Dialog for DialogYesCancelNo {
+    fn draw(&self, console: &Console, console_width: usize, console_height: usize) {
+        let char_count = self.message.chars().count();
+
+        let width = char_count.max(31);
+        let width_with_border = width + 2;
+
+        let x_start = ((console_width - width_with_border) as f64 * 0.5) as usize;
+        let y_start = ((console_height - 6) as f64 * 0.5) as usize;
+
+        let whitespace_count_half = ((width - char_count) as f64 * 0.5) as usize;
+
+        console.set_color(Color::Black, Color::Yellow);
+        console.set_cursor_pos(x_start + 1, y_start + 1);
+        console.draw_text(format!(
+            "{}{}{}",
+            " ".repeat(whitespace_count_half),
+            self.message,
+            " ".repeat(width - char_count - whitespace_count_half),
+        ));
+
+        console.set_cursor_pos(x_start + 1, y_start + 2);
+        console.draw_text(format!(
+            "{}{}{}",
+            " ".repeat(whitespace_count_half),
+            "-".repeat(char_count),
+            " ".repeat(width - char_count - whitespace_count_half),
+        ));
+
+        console.set_cursor_pos(x_start + 1, y_start + 3);
+        console.draw_text(" ".repeat(width));
+
+        let first_half = ((width - 17) as f64 * 0.5) as usize;
+        let second_half = width - 17 - first_half;
+
+        console.set_cursor_pos(x_start + 1, y_start + 4);
+        console.draw_text(format!(
+            "[y]es{}[c]ancel{}[n]o",
+            " ".repeat(first_half),
+            " ".repeat(second_half),
+        ));
+
+        console.set_color(Color::LightBlack, Color::Red);
+        self.draw_border(console, x_start, y_start, width_with_border, 5);
+    }
+
+    fn on_key_pressed(&self, _: usize, _: usize, key: Key) -> Option<DialogSelection> {
+        if key == Key::Y {
+            return Some(DialogSelection::Yes);
+        }else if key == Key::C {
+            return Some(DialogSelection::Cancel);
+        }else if key == Key::N {
+            return Some(DialogSelection::No);
+        }
+
+        None
+    }
+
+    fn on_mouse_pressed(&self, console_width: usize, console_height: usize, column: usize, row: usize) -> Option<DialogSelection> {
+        let char_count = self.message.chars().count();
+
+        let width = char_count.max(31);
+        let width_with_border = width + 2;
+
+        let x_start = ((console_width - width_with_border) as f64 * 0.5) as usize;
+        let y_start = ((console_height - 6) as f64 * 0.5) as usize;
+
+        let first_half = ((width - 17) as f64 * 0.5) as usize;
+
+        if row == y_start + 4 {
+            if(x_start + 1..x_start + 6).contains(&column) {
+                return Some(DialogSelection::Yes);
+            }else if(x_start + 6 + first_half..x_start + 6 + first_half + 8).contains(&column) {
+                return Some(DialogSelection::Cancel);
+            }else if(x_start + width - 3..x_start + width + 1).contains(&column) {
+                return Some(DialogSelection::No);
+            }
         }
 
         None

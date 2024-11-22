@@ -5,7 +5,7 @@ use std::time::SystemTime;
 use dialog::DialogYesNo;
 use crate::game::{Game, GameState};
 use crate::game::level::{Level, LevelPack, Tile};
-use crate::game::screen::dialog::{DialogOk, DialogSelection};
+use crate::game::screen::dialog::{DialogOk, DialogSelection, DialogYesCancelNo};
 use crate::collections::UndoHistory;
 
 pub mod dialog;
@@ -2221,8 +2221,7 @@ impl Screen for ScreenLevelEditor {
 
     fn on_key_pressed(&mut self, game_state: &mut GameState, key: Key) {
         if key == Key::ESC {
-            //TODO use dialog with cancel option
-            game_state.open_dialog(Box::new(DialogYesNo::new("Exiting (Save changes?)")));
+            game_state.open_dialog(Box::new(DialogYesCancelNo::new("Exiting (Save changes?)")));
 
             return;
         }
@@ -2314,6 +2313,8 @@ impl Screen for ScreenLevelEditor {
             self.level.clear();
             game_state.set_screen(ScreenId::LevelPackEditor);
         }
+
+        //Cancel: Close dialog without doing anything
     }
 
     fn on_set_screen(&mut self, game_state: &mut GameState) {
