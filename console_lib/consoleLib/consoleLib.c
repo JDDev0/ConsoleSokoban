@@ -181,9 +181,8 @@
 
         resetColor();
 
-        //Exists
-        int fgID = (fg == -1?-1:fg&7) + 1;
-        int bgID = (bg == -1?-1:bg&7) + 1;
+        const int fgID = (fg == -1?-1:fg&7) + 1;
+        const int bgID = (bg == -1?-1:bg&7) + 1;
         if(colorIDMap[fgID][bgID]&1) {
             attron(COLOR_PAIR(((colorIDMap[fgID][bgID] - 1 >> 1) & 127) + 1) | (fg&8||bg&8?(A_BOLD):0));
         }else {
