@@ -630,11 +630,11 @@ impl LevelPack {
     pub fn save_editor_level_pack_to_path(&self, path: impl Into<String>) -> Result<(), Box<dyn Error>> {
         let mut file = File::create(path.into())?;
 
-        file.write_fmt(format_args!("Levels: {}\n", self.levels.len()))?;
+        writeln!(file, "Levels: {}", self.levels.len())?;
 
         for level in self.levels.iter().
                 map(|level| level.level()) {
-            file.write_fmt(format_args!("\n{}", level.to_str()))?;
+            write!(file, "\n{}", level.to_str())?;
         }
         file.flush()?;
 
@@ -648,15 +648,15 @@ impl LevelPack {
 
         let mut file = File::create(save_game_file)?;
 
-        file.write_fmt(format_args!("{}\n", self.min_level_not_completed))?;
+        writeln!(file, "{}", self.min_level_not_completed)?;
 
         for level in self.levels.iter().
                 take(self.min_level_not_completed) {
-            file.write_fmt(format_args!(
-                "ms{},{}\n",
+            writeln!(
+                file, "ms{},{}",
                 level.best_time.map_or(-1, |best_time| best_time as i64),
                 level.best_moves.map_or(-1, |best_moves| best_moves as i32)
-            ))?;
+            )?;
         }
         file.flush()?;
 
