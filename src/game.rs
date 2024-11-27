@@ -259,13 +259,11 @@ impl <'a> Game<'a> {
     pub fn new(console: &'a Console) -> Result<Self, Box<dyn Error>> {
         let (width, height) = console.get_console_size();
         if width < Self::CONSOLE_MIN_WIDTH || height < Self::CONSOLE_MIN_HEIGHT {
-            return Err(Box::new(GameError::new(
-                format_args!(
-                    "Console is to small (Min: {} x {})!",
-                    Self::CONSOLE_MIN_WIDTH,
-                    Self::CONSOLE_MIN_HEIGHT
-                ).to_string())
-            ));
+            return Err(Box::new(GameError::new(format!(
+                "Console is to small (Min: {} x {})!",
+                Self::CONSOLE_MIN_WIDTH,
+                Self::CONSOLE_MIN_HEIGHT
+            ))));
         }
 
         let screens = HashMap::from_iter([
