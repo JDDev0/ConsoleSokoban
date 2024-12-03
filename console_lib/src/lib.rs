@@ -273,7 +273,7 @@ impl Key {
 }
 
 #[repr(i8)]
-#[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum Color {
     Black,
     Blue,

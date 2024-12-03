@@ -147,7 +147,7 @@ impl Dialog for DialogOk {
 
         let whitespace_count_half = ((width - char_count) as f64 * 0.5) as usize;
 
-        console.set_color(self.fg_color.clone(), Color::Yellow);
+        console.set_color(self.fg_color, Color::Yellow);
         console.set_cursor_pos(x_start + 1, y_start + 1);
         console.draw_text(format!(
             "{}{}{}",
