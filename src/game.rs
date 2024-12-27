@@ -501,7 +501,9 @@ impl <'a> Game<'a> {
         }
 
         if self.console.has_input() {
-            self.update_key(self.console.get_key());
+            if let Some(key) = self.console.get_key() {
+                self.update_key(key);
+            }
         }
 
         self.update_mouse();
@@ -566,12 +568,9 @@ impl <'a> Game<'a> {
     }
 
     fn update_mouse(&mut self) {
-        let (column, row) = self.console.get_mouse_pos_clicked();
-        if column < 0 || row < 0 {
+        let Some((column, row)) = self.console.get_mouse_pos_clicked() else {
             return;
-        }
-
-        let (column, row) = (column as usize, row as usize);
+        };
 
         if self.game_state.is_help {
             self.help_page.on_mouse_pressed(Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT, column, row);

@@ -29,9 +29,9 @@ dependencies = [
 
 [[package]]
 name = "console-lib"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e86ea68249a525001ea09d72a74c40f96909fd63b52a2f86439cb8009e967080"
+checksum = "5df45d2059d6b450a4312510d01a7e3480458120e40a351adeea0015c1fc7546"
 dependencies = [
  "cmake",
 ]
