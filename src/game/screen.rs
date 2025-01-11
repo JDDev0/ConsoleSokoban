@@ -1,5 +1,6 @@
 use console_lib::{Key, Color, Console};
 use std::cmp::Ordering;
+use std::fmt::Write as _;
 use std::str::FromStr;
 use std::time::SystemTime;
 use dialog::DialogYesNo;
@@ -1264,7 +1265,7 @@ impl Screen for ScreenSelectLevelPackEditor {
                         return;
                     }
                     
-                    self.new_level_pack_id += &format!("{}", key.to_ascii().unwrap() as char);
+                    let _ = write!(self.new_level_pack_id, "{}", key.to_ascii().unwrap() as char);
                 },
                 Key::DELETE => {
                     self.new_level_pack_id.pop();
@@ -1638,13 +1639,13 @@ impl Screen for ScreenLevelPackEditor {
                             return;
                         }
 
-                        self.new_level_height_str += &format!("{}", key.to_ascii().unwrap() as char);
+                        let _ = write!(self.new_level_height_str, "{}", key.to_ascii().unwrap() as char);
                     }else {
                         if self.new_level_width_str.len() >= 2 {
                             return;
                         }
 
-                        self.new_level_width_str += &format!("{}", key.to_ascii().unwrap() as char);
+                        let _ = write!(self.new_level_width_str, "{}", key.to_ascii().unwrap() as char);
                     }
                 },
                 Key::DELETE => {

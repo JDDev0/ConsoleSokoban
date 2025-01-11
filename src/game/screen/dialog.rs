@@ -8,7 +8,6 @@ pub enum DialogSelection {
     Cancel,
 }
 
-#[allow(unused_variables)]
 pub trait Dialog {
     fn draw_border(&self, console: &Console, x: usize, y: usize, width: usize, height: usize) {
         console.set_cursor_pos(x, y);

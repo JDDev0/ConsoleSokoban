@@ -1,7 +1,7 @@
 use crate::game::Game;
 use console_lib::{Color, Console};
 use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Debug, Display, Formatter, Write as _};
 use std::fs::File;
 use std::io::Write;
 use std::str::FromStr;
@@ -327,7 +327,7 @@ impl Level {
     pub fn to_str(&self) -> String {
         let mut out = String::with_capacity(14 + self.width * self.height);
 
-        out += &format!("w: {}, h: {}\n", self.width, self.height);
+        let _ = writeln!(out, "w: {}, h: {}", self.width, self.height);
         for row in self.tiles.chunks(self.width) {
             row.iter().map(|tile| (tile.to_ascii() as char).to_string()).for_each(|tile| out += &tile);
             out += "\n";

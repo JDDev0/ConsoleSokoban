@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests;
 
+use std::fmt::Write as _;
+
 pub fn number_to_string_leading_ascii(digits: u32, num: u32, leading_zeros: bool) -> String {
     if digits == 0 {
         panic!("Not enough digits");
@@ -25,7 +27,7 @@ pub fn number_to_string_leading_ascii(digits: u32, num: u32, leading_zeros: bool
     let mut out = ((b'A' + leading_digit as u8) as char).to_string();
 
     if digits > 1 {
-        out += &format!("{:01$}", num % (digits_10s / 10), digits as usize - 1);
+        let _ = write!(out, "{:01$}", num % (digits_10s / 10), digits as usize - 1);
     }
 
     out
