@@ -1,4 +1,5 @@
 use console_lib::{Key, Color, Console};
+use crate::game::{audio, GameState};
 
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 enum SectionLayer {
@@ -682,14 +683,18 @@ impl HelpPage {
         console.draw_text(format!("{}", Self::PAGE_COUNT));
     }
 
-    pub fn on_key_pressed(&mut self, key: Key) {
+    pub fn on_key_pressed(&mut self, game_state: &mut GameState, key: Key) {
         if key == Key::UP {
+            game_state.play_sound_effect(audio::BOOK_FLIP_EFFECT);
+
             self.page = if self.page == 0 {
                 Self::PAGE_COUNT - 1
             }else {
                 self.page - 1
             };
         }else if key == Key::DOWN {
+            game_state.play_sound_effect(audio::BOOK_FLIP_EFFECT);
+
             self.page = if self.page == Self::PAGE_COUNT - 1 {
                 0
             }else {
@@ -698,15 +703,17 @@ impl HelpPage {
         }
     }
 
-    pub fn on_mouse_pressed(&mut self, _width: usize, height: usize, column: usize, row: usize) {
+    pub fn on_mouse_pressed(&mut self, _width: usize, height: usize, game_state: &mut GameState, column: usize, row: usize) {
         if row >= 2 && row < height - 2 {
             if let Some(page_clicked) = self.table_of_contents.get_page_mouse_clicked(height, self.page, row as u32 - 2) {
+                game_state.play_sound_effect(audio::BOOK_FLIP_EFFECT);
+                
                 self.page = page_clicked;
             }
         }
 
         if row == height - 1 && column < 8 {
-            self.on_key_pressed(Key::DOWN);
+            self.on_key_pressed(game_state, Key::DOWN);
         }
     }
 }

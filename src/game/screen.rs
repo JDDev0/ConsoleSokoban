@@ -4,7 +4,7 @@ use std::fmt::Write as _;
 use std::str::FromStr;
 use std::time::SystemTime;
 use dialog::DialogYesNo;
-use crate::game::{Game, GameState};
+use crate::game::{audio, Game, GameState};
 use crate::game::level::{Level, LevelPack, Tile};
 use crate::game::screen::dialog::{DialogOk, DialogSelection, DialogYesCancelNo};
 use crate::collections::UndoHistory;
@@ -122,6 +122,8 @@ impl Screen for ScreenStartMenu {
         }
 
         if key == Key::ENTER {
+            game_state.play_sound_effect_ui_select();
+
             game_state.set_screen(ScreenId::SelectLevelPack);
         }
     }
@@ -273,6 +275,8 @@ impl Screen for ScreenSelectLevelPack {
 
     fn on_key_pressed(&mut self, game_state: &mut GameState, key: Key) {
         if key == Key::ESC {
+            game_state.play_sound_effect(audio::UI_SELECT_EFFECT);
+
             game_state.set_screen(ScreenId::StartMenu);
 
             return;
@@ -319,6 +323,8 @@ impl Screen for ScreenSelectLevelPack {
                 },
 
                 Key::ENTER => {
+                    game_state.play_sound_effect_ui_select();
+
                     if game_state.get_level_pack_index() == game_state.get_level_pack_count() {
                         //Level Pack Editor entry
                         game_state.set_level_index(0);
@@ -483,6 +489,8 @@ impl Screen for ScreenSelectLevel {
 
     fn on_key_pressed(&mut self, game_state: &mut GameState, key: Key) {
         if key == Key::ESC {
+            game_state.play_sound_effect(audio::UI_SELECT_EFFECT);
+
             game_state.set_screen(ScreenId::SelectLevelPack);
 
             return;
@@ -527,10 +535,16 @@ impl Screen for ScreenSelectLevel {
                     self.selected_level += 24;
                 },
 
-                Key::ENTER if self.selected_level <= game_state.get_current_level_pack().
-                        as_ref().unwrap().min_level_not_completed() => {
-                    game_state.set_level_index(self.selected_level);
-                    game_state.set_screen(ScreenId::InGame);
+                Key::ENTER => {
+                    if self.selected_level <= game_state.get_current_level_pack().
+                            as_ref().unwrap().min_level_not_completed() {
+                        game_state.play_sound_effect_ui_select();
+
+                        game_state.set_level_index(self.selected_level);
+                        game_state.set_screen(ScreenId::InGame);
+                    }else {
+                        game_state.play_sound_effect_ui_error();
+                    }
                 },
 
                 _ => {},
@@ -915,6 +929,8 @@ impl Screen for ScreenInGame {
                 self.continue_flag = false;
                 self.game_over_flag = false;
 
+                game_state.play_sound_effect(audio::UI_SELECT_EFFECT);
+
                 game_state.set_screen(ScreenId::SelectLevel);
 
                 return;
@@ -949,6 +965,8 @@ impl Screen for ScreenInGame {
                 if current_level_index + 1 == level_pack.level_count() {
                     self.game_over_flag = true;
 
+                    game_state.play_sound_effect(audio::LEVEL_PACK_COMPLETE_EFFECT);
+
                     return;
                 }else {
                     game_state.current_level_index += 1;
@@ -957,20 +975,36 @@ impl Screen for ScreenInGame {
                 self.start_level(game_state.get_current_level_pack().unwrap().levels()[game_state.current_level_index].level());
             }else if key == Key::R {
                 self.start_level(level_pack.levels()[current_level_index].level());
+
+                game_state.play_sound_effect(audio::LEVEL_RESET);
             }
 
             return;
         }
 
         if key == Key::Z {
-            self.level.as_mut().unwrap().undo();
+            let level = self.level.as_mut().unwrap().undo();
+            if level.is_some() {
+                game_state.play_sound_effect(audio::UNDO_REDO_EFFECT);
+            }
+
+            return;
         }else if key == Key::Y {
-            self.level.as_mut().unwrap().redo();
+            let level = self.level.as_mut().unwrap().redo();
+            if level.is_some() {
+                game_state.play_sound_effect(audio::UNDO_REDO_EFFECT);
+            }
+
+            return;
         }
 
         //Reset
         if key == Key::R {
             self.start_level(level_pack.levels()[current_level_index].level());
+
+            game_state.play_sound_effect(audio::LEVEL_RESET);
+
+            return;
         }
 
         if key.is_arrow_key() {
@@ -1046,7 +1080,8 @@ impl Screen for ScreenInGame {
             //Set player to new position
             level.set_tile(player_pos.0, player_pos.1, Tile::Player);
 
-            if player_pos != (x_from, y_from) {
+            let has_player_moved = player_pos != (x_from, y_from);
+            if has_player_moved {
                 self.level.as_mut().unwrap().commit_change((level, player_pos));
             }
 
@@ -1066,10 +1101,18 @@ impl Screen for ScreenInGame {
                 if let Err(err) = level_pack.save_save_game() {
                     game_state.open_dialog(Box::new(DialogOk::new_error(format!("Cannot save: {}", err))));
                 }
+
+                game_state.play_sound_effect(audio::LEVEL_COMPLETE_EFFECT);
+            }
+
+            if has_player_moved {
+                game_state.play_sound_effect(audio::STEP_EFFECT);
+            }else {
+                game_state.play_sound_effect(audio::NO_PATH_EFFECT);
             }
 
             if self.secret_found_flag {
-                game_state.open_dialog(Box::new(DialogOk::new("You have found a secret!")));
+                game_state.open_dialog(Box::new(DialogOk::new_secret_found("You have found a secret!")));
 
                 if let Err(err) = game_state.on_found_secret() {
                     game_state.open_dialog(Box::new(DialogOk::new_error(format!("Error: {}", err))));
@@ -1306,6 +1349,8 @@ impl Screen for ScreenSelectLevelPackEditor {
                         game_state.open_dialog(Box::new(DialogOk::new_error(format!("Cannot save: {}", err))));
                     }
 
+                    game_state.play_sound_effect_ui_select();
+
                     let index = game_state.editor_state.level_packs.binary_search_by_key(
                         &level_pack.id().to_string(),
                         |level_pack| level_pack.id().to_string(),
@@ -1322,6 +1367,8 @@ impl Screen for ScreenSelectLevelPackEditor {
                 },
 
                 Key::ESC => {
+                    game_state.play_sound_effect(audio::UI_SELECT_EFFECT);
+
                     self.is_creating_new_level_pack = false;
                     self.new_level_pack_id = String::new();
                 },
@@ -1333,6 +1380,8 @@ impl Screen for ScreenSelectLevelPackEditor {
         }
 
         if key == Key::ESC {
+            game_state.play_sound_effect(audio::UI_SELECT_EFFECT);
+
             game_state.set_screen(ScreenId::SelectLevelPack);
 
             return;
@@ -1402,9 +1451,13 @@ impl Screen for ScreenSelectLevelPackEditor {
                                 LevelPack::MAX_LEVEL_PACK_COUNT,
                             ))));
                         }else {
+                            game_state.play_sound_effect_ui_select();
+
                             self.is_creating_new_level_pack = true;
                         }
                     }else {
+                        game_state.play_sound_effect_ui_select();
+
                         //Set selected level pack
                         game_state.editor_state.set_level_index(0);
                         game_state.set_screen(ScreenId::LevelPackEditor);
@@ -1703,6 +1756,8 @@ impl Screen for ScreenLevelPackEditor {
                         return;
                     }
 
+                    game_state.play_sound_effect_ui_select();
+
                     game_state.editor_state.get_current_level_pack_mut().unwrap().add_level(Level::new(width, height));
 
                     self.is_creating_new_level = false;
@@ -1714,6 +1769,8 @@ impl Screen for ScreenLevelPackEditor {
                 },
 
                 Key::ESC => {
+                    game_state.play_sound_effect(audio::UI_SELECT_EFFECT);
+
                     self.is_creating_new_level = false;
                     self.is_editing_height = false;
                     self.new_level_width_str = String::new();
@@ -1727,6 +1784,8 @@ impl Screen for ScreenLevelPackEditor {
         }
 
         if key == Key::ESC {
+            game_state.play_sound_effect(audio::UI_SELECT_EFFECT);
+
             game_state.set_screen(ScreenId::SelectLevelPackEditor);
 
             return;
@@ -1781,9 +1840,13 @@ impl Screen for ScreenLevelPackEditor {
                                 LevelPack::MAX_LEVEL_COUNT_PER_PACK,
                             ))));
                         }else {
+                            game_state.play_sound_effect_ui_select();
+
                             self.is_creating_new_level = true;
                         }
                     }else {
+                        game_state.play_sound_effect_ui_select();
+
                         //Set selected level
                         game_state.set_screen(ScreenId::LevelEditor);
                     }
@@ -1854,16 +1917,20 @@ impl ScreenLevelEditor {
         }
     }
 
-    fn on_key_pressed_playing(&mut self, key: Key) {
+    fn on_key_pressed_playing(&mut self, game_state: &mut GameState, key: Key) {
         if let Some(level_history) = self.playing_level.as_mut() {
             if matches!(key, Key::Z | Key::Y) {
                 let is_undo = key == Key::Z;
 
-                if is_undo {
+                let level = if is_undo {
                     level_history.undo()
                 }else {
                     level_history.redo()
                 };
+
+                if level.is_some() {
+                    game_state.play_sound_effect(audio::UNDO_REDO_EFFECT);
+                }
             }
 
             if key.is_arrow_key() {
@@ -1934,6 +2001,10 @@ impl ScreenLevelEditor {
 
                 if player_pos != (x_from, y_from) {
                     level_history.commit_change((level, player_pos));
+
+                    game_state.play_sound_effect(audio::STEP_EFFECT);
+                }else {
+                    game_state.play_sound_effect(audio::NO_PATH_EFFECT);
                 }
             }
         }
@@ -2235,6 +2306,8 @@ impl Screen for ScreenLevelEditor {
 
         if key == Key::R {
             self.playing_level = if self.playing_level.is_some() {
+                game_state.play_sound_effect(audio::LEVEL_RESET);
+
                 None
             }else {
                 let player_tile_count = self.level.current().tiles().iter().filter(|tile| **tile == Tile::Player).count();
@@ -2272,7 +2345,7 @@ impl Screen for ScreenLevelEditor {
         if self.playing_level.is_none() {
             self.on_key_pressed_editing(game_state, key);
         }else {
-            self.on_key_pressed_playing(key);
+            self.on_key_pressed_playing(game_state, key);
         }
     }
 

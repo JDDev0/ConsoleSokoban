@@ -7,14 +7,16 @@ use std::mem;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use crate::game::audio::AudioHandler;
 use crate::game::help_page::HelpPage;
 use crate::game::level::{Level, LevelPack, Tile};
 use crate::game::screen::{Screen, ScreenId, ScreenInGame, ScreenLevelEditor, ScreenLevelPackEditor, ScreenSelectLevel, ScreenSelectLevelPack, ScreenSelectLevelPackEditor, ScreenStartMenu};
-use crate::game::screen::dialog::Dialog;
+use crate::game::screen::dialog::{Dialog, DialogType};
 
 mod level;
 mod screen;
 mod help_page;
+mod audio;
 
 struct EditorState {
     level_packs: Vec<LevelPack>,
@@ -92,6 +94,8 @@ struct GameState {
     should_exit: bool,
 
     editor_state: EditorState,
+
+    audio_handler: Option<AudioHandler>,
 }
 
 impl GameState {
@@ -116,6 +120,8 @@ impl GameState {
             should_exit: Default::default(),
 
             editor_state: EditorState::new(editor_level_packs),
+
+            audio_handler: AudioHandler::new().ok(),
         }
     }
 
@@ -161,10 +167,14 @@ impl GameState {
     }
 
     pub fn open_help_page(&mut self) {
+        self.play_sound_effect(audio::BOOK_OPEN_EFFECT);
+
         self.is_help = true;
     }
 
     pub fn close_help_page(&mut self) {
+        self.play_sound_effect(audio::UI_SELECT_EFFECT);
+
         self.is_help = false;
     }
 
@@ -173,7 +183,21 @@ impl GameState {
     }
 
     pub fn open_dialog(&mut self, dialog: Box<dyn Dialog>) {
+        let dialog_type = dialog.dialog_type();
+
         self.dialog = Some(dialog);
+
+        match dialog_type {
+            DialogType::Information => {
+                self.play_sound_effect_ui_dialog_open();
+            },
+            DialogType::Error => {
+                self.play_sound_effect_ui_error();
+            },
+            DialogType::SecretFound => {
+                self.play_sound_effect(audio::SECRET_FOUND_EFFECT);
+            },
+        }
     }
 
     pub fn close_dialog(&mut self) {
@@ -201,6 +225,24 @@ impl GameState {
 
     pub fn on_found_secret(&mut self) -> Result<(), Box<dyn Error>> {
         self.on_found_secret_for_level_pack(self.current_level_pack_index)
+    }
+
+    pub fn play_sound_effect_ui_dialog_open(&self) {
+        self.play_sound_effect(audio::UI_DIALOG_OPEN_EFFECT);
+    }
+
+    pub fn play_sound_effect_ui_select(&self) {
+        self.play_sound_effect(audio::UI_SELECT_EFFECT);
+    }
+
+    pub fn play_sound_effect_ui_error(&self) {
+        self.play_sound_effect(audio::UI_ERROR_EFFECT);
+    }
+
+    pub fn play_sound_effect(&self, sound_effect: &'static [u8]) {
+        if let Some(audio_handler) = &self.audio_handler {
+            let _ = audio_handler.play_sound_effect(sound_effect);
+        }
     }
 }
 
@@ -543,7 +585,7 @@ impl <'a> Game<'a> {
                     screen.on_continue(&mut self.game_state);
                 }
             }else {
-                self.help_page.on_key_pressed(key);
+                self.help_page.on_key_pressed(&mut self.game_state, key);
             }
 
             return;
@@ -556,6 +598,8 @@ impl <'a> Game<'a> {
                 let screen = self.screens.get_mut(&self.game_state.current_screen_id);
                 if let Some(screen) = screen {
                     screen.on_dialog_selection(&mut self.game_state, dialog_selection);
+
+                    self.game_state.play_sound_effect_ui_select();
                 }
             }
 
@@ -573,7 +617,7 @@ impl <'a> Game<'a> {
         };
 
         if self.game_state.is_help {
-            self.help_page.on_mouse_pressed(Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT, column, row);
+            self.help_page.on_mouse_pressed(Self::CONSOLE_MIN_WIDTH, Self::CONSOLE_MIN_HEIGHT, &mut self.game_state, column, row);
 
             return;
         }
@@ -585,6 +629,8 @@ impl <'a> Game<'a> {
                 let screen = self.screens.get_mut(&self.game_state.current_screen_id);
                 if let Some(screen) = screen {
                     screen.on_dialog_selection(&mut self.game_state, dialog_selection);
+
+                    self.game_state.play_sound_effect_ui_select();
                 }
             }
 

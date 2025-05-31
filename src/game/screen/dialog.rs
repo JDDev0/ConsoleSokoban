@@ -1,6 +1,13 @@
 use console_lib::{Key, Color, Console};
 
-#[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
+pub enum DialogType {
+    Information,
+    Error,
+    SecretFound,
+}
+
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum DialogSelection {
     No,
     Yes,
@@ -9,6 +16,8 @@ pub enum DialogSelection {
 }
 
 pub trait Dialog {
+    fn dialog_type(&self) -> DialogType;
+
     fn draw_border(&self, console: &Console, x: usize, y: usize, width: usize, height: usize) {
         console.set_cursor_pos(x, y);
         console.draw_text(" ".repeat(width));
@@ -31,16 +40,24 @@ pub trait Dialog {
 }
 
 pub struct DialogYesNo {
-    message: String
+    message: String,
+    dialog_type: DialogType,
 }
 
 impl DialogYesNo {
     pub fn new(message: impl Into<String>) -> Self {
-        Self { message: message.into() }
+        Self {
+            message: message.into(),
+            dialog_type: DialogType::Information,
+        }
     }
 }
 
 impl Dialog for DialogYesNo {
+    fn dialog_type(&self) -> DialogType {
+        self.dialog_type
+    }
+
     fn draw(&self, console: &Console, console_width: usize, console_height: usize) {
         let char_count = self.message.chars().count();
 
@@ -116,6 +133,7 @@ impl Dialog for DialogYesNo {
 pub struct DialogOk {
     message: String,
     fg_color: Color,
+    dialog_type: DialogType,
 }
 
 impl DialogOk {
@@ -123,6 +141,7 @@ impl DialogOk {
         Self {
             message: message.into(),
             fg_color: Color::Black,
+            dialog_type: DialogType::Information,
         }
     }
 
@@ -130,11 +149,24 @@ impl DialogOk {
         Self {
             message: message.into(),
             fg_color: Color::LightRed,
+            dialog_type: DialogType::Error,
+        }
+    }
+
+    pub fn new_secret_found(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+            fg_color: Color::Black,
+            dialog_type: DialogType::SecretFound,
         }
     }
 }
 
 impl Dialog for DialogOk {
+    fn dialog_type(&self) -> DialogType {
+        self.dialog_type
+    }
+
     fn draw(&self, console: &Console, console_width: usize, console_height: usize) {
         let char_count = self.message.chars().count();
 
@@ -208,16 +240,24 @@ impl Dialog for DialogOk {
 }
 
 pub struct DialogYesCancelNo {
-    message: String
+    message: String,
+    dialog_type: DialogType,
 }
 
 impl DialogYesCancelNo {
     pub fn new(message: impl Into<String>) -> Self {
-        Self { message: message.into() }
+        Self {
+            message: message.into(),
+            dialog_type: DialogType::Information,
+        }
     }
 }
 
 impl Dialog for DialogYesCancelNo {
+    fn dialog_type(&self) -> DialogType {
+        self.dialog_type
+    }
+
     fn draw(&self, console: &Console, console_width: usize, console_height: usize) {
         let char_count = self.message.chars().count();
 
