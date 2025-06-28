@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 use console_lib::Console;
 use std::process::ExitCode;
 use std::thread::sleep;
