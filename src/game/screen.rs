@@ -1,4 +1,3 @@
-use console_lib::{Key, Color, Console};
 use std::cmp::Ordering;
 use std::fmt::Write as _;
 use std::str::FromStr;
@@ -8,6 +7,7 @@ use crate::game::{audio, Game, GameState};
 use crate::game::level::{Level, LevelPack, Tile};
 use crate::game::screen::dialog::{DialogOk, DialogSelection, DialogYesCancelNo};
 use crate::collections::UndoHistory;
+use crate::io::{Color, Console, Key};
 
 pub mod dialog;
 pub mod utils;

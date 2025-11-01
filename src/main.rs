@@ -1,13 +1,14 @@
 #![allow(clippy::uninlined_format_args)]
 
-use console_lib::Console;
 use std::process::ExitCode;
 use std::thread::sleep;
 use std::time::Duration;
 use crate::game::Game;
+use crate::io::Console;
 
 pub mod game;
 pub mod collections;
+pub mod io;
 
 fn main() -> ExitCode {
     let console = Console::new().unwrap();

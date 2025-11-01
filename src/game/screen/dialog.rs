@@ -1,4 +1,4 @@
-use console_lib::{Key, Color, Console};
+use crate::io::{Color, Console, Key};
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum DialogType {

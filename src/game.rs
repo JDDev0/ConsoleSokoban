@@ -1,4 +1,3 @@
-use console_lib::{Key, Console};
 use std::collections::HashMap;
 use std::error::Error;
 use std::ffi::OsString;
@@ -12,6 +11,7 @@ use crate::game::help_page::HelpPage;
 use crate::game::level::{Level, LevelPack, Tile};
 use crate::game::screen::{Screen, ScreenId, ScreenInGame, ScreenLevelEditor, ScreenLevelPackEditor, ScreenSelectLevel, ScreenSelectLevelPack, ScreenSelectLevelPackEditor, ScreenStartMenu};
 use crate::game::screen::dialog::{Dialog, DialogType};
+use crate::io::{Console, Key};
 
 mod level;
 mod screen;

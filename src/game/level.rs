@@ -1,10 +1,10 @@
 use crate::game::Game;
-use console_lib::{Color, Console};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter, Write as _};
 use std::fs::File;
 use std::io::Write;
 use std::str::FromStr;
+use crate::io::{Color, Console};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Tile {

@@ -1,5 +1,5 @@
-use console_lib::{Key, Color, Console};
 use crate::game::{audio, GameState};
+use crate::io::{Color, Console, Key};
 
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 enum SectionLayer {
