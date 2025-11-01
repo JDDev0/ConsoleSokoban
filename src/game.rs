@@ -542,10 +542,8 @@ impl <'a> Game<'a> {
             return true;
         }
 
-        if self.console.has_input() {
-            if let Some(key) = self.console.get_key() {
-                self.update_key(key);
-            }
+        if self.console.has_input() && let Some(key) = self.console.get_key() {
+            self.update_key(key);
         }
 
         self.update_mouse();

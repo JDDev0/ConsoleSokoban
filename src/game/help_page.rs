@@ -704,12 +704,10 @@ impl HelpPage {
     }
 
     pub fn on_mouse_pressed(&mut self, _width: usize, height: usize, game_state: &mut GameState, column: usize, row: usize) {
-        if row >= 2 && row < height - 2 {
-            if let Some(page_clicked) = self.table_of_contents.get_page_mouse_clicked(height, self.page, row as u32 - 2) {
-                game_state.play_sound_effect(audio::BOOK_FLIP_EFFECT);
-                
-                self.page = page_clicked;
-            }
+        if row >= 2 && row < height - 2 &&  let Some(page_clicked) = self.table_of_contents.get_page_mouse_clicked(height, self.page, row as u32 - 2) {
+            game_state.play_sound_effect(audio::BOOK_FLIP_EFFECT);
+
+            self.page = page_clicked;
         }
 
         if row == height - 1 && column < 8 {

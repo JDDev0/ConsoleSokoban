@@ -620,12 +620,10 @@ impl ScreenInGame {
         'outer:
         for i in 0..level.width() {
             for j in 0..level.height() {
-                if let Some(tile) = level.get_tile(i, j) {
-                    if *tile == Tile::Player {
-                        player_pos = Some((i, j));
+                if let Some(tile) = level.get_tile(i, j) && *tile == Tile::Player {
+                    player_pos = Some((i, j));
 
-                        break 'outer;
-                    }
+                    break 'outer;
                 }
             }
         }
@@ -2228,16 +2226,14 @@ impl ScreenLevelEditor {
             },
 
             key if key.is_ascii() => {
-                if let Ok(tile_input) = Tile::from_ascii(key.to_ascii().unwrap()) {
-                    if tile_input != Tile::Secret {
-                        let mut level = self.level.current().clone();
-                        let tile = level.get_tile_mut(self.cursor_pos.0, self.cursor_pos.1).unwrap();
+                if let Ok(tile_input) = Tile::from_ascii(key.to_ascii().unwrap()) && tile_input != Tile::Secret {
+                    let mut level = self.level.current().clone();
+                    let tile = level.get_tile_mut(self.cursor_pos.0, self.cursor_pos.1).unwrap();
 
-                        if *tile != tile_input {
-                            *tile = tile_input;
+                    if *tile != tile_input {
+                        *tile = tile_input;
 
-                            self.level.commit_change(level);
-                        }
+                        self.level.commit_change(level);
                     }
                 }
 
@@ -2327,12 +2323,10 @@ impl Screen for ScreenLevelEditor {
                 'outer:
                 for i in 0..self.level.current().width() {
                     for j in 0..self.level.current().height() {
-                        if let Some(tile) = self.level.current().get_tile(i, j) {
-                            if *tile == Tile::Player {
-                                player_pos = Some((i, j));
+                        if let Some(tile) = self.level.current().get_tile(i, j) && *tile == Tile::Player {
+                            player_pos = Some((i, j));
 
-                                break 'outer;
-                            }
+                            break 'outer;
                         }
                     }
                 }
