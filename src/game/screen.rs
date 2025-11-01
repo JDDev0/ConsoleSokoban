@@ -50,7 +50,8 @@ impl ScreenStartMenu {
 }
 
 impl Screen for ScreenStartMenu {
-    fn draw(&self, _: &GameState, console: &Console) {//Draw border (top)
+    fn draw(&self, _: &GameState, console: &Console) {
+        //Draw border (top)
         console.set_color(Color::White, Color::Blue);
         console.draw_text(
             "/------------------------------------------------------------------------\\\n"
